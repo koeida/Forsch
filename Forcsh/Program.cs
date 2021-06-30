@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -9,18 +10,21 @@ namespace Forcsh
     
     using FStack = Stack<(FType, String)>;
     using FWordDict = Dictionary<string, Action<Stack<(FType, String)>>>;
-
+    
     public readonly struct FEnvironment
     {
         public FStack DataStack { get; }
         public FWordDict WordDict { get; }
         public IEnumerable<String> Input { get; }
         
-        public FEnvironment(FStack dataStack, FWordDict wordDict, IEnumerable<string> input)
+        public bool ImmediateMode { get; }
+        
+        public FEnvironment(FStack dataStack, FWordDict wordDict, IEnumerable<string> input, bool immediateMode)
         {
             DataStack = dataStack;
             WordDict = wordDict;
             Input = input;
+            ImmediateMode = immediateMode;
         }
     }
 
@@ -115,8 +119,22 @@ namespace Forcsh
         
         public static FEnvironment GetNext(FEnvironment e)
         {
-            var (tail, token) = TokenizeHead(e);
-            return new FEnvironment(e.DataStack, e.WordDict, tail);
+            var (tail, (t, v)) = TokenizeHead(e);
+            if (e.ImmediateMode)
+            {
+                if (t == FType.FWord)
+                {
+                    Console.Out.WriteLine("Executing word " + v);
+                    e.WordDict[v](e.DataStack);
+                    
+                }
+                else
+                {
+                    Console.Out.WriteLine("pushing value onto stack: " + v);
+                    e.DataStack.Push((t, v));
+                }
+            } 
+            return new FEnvironment(e.DataStack, e.WordDict, tail, e.ImmediateMode);
         }
 
         public static (IEnumerable<string> tail, (FType, string) token) TokenizeHead(FEnvironment e)
@@ -130,21 +148,19 @@ namespace Forcsh
         public static void Main(string[] args)
         {
             IEnumerable<String> line = new List<string>();
+            var e = new FEnvironment(DataStack, WordDict, line, true);
             while (true)
             {
-                if (line.Count() == 0)
+                if (e.Input.Count() == 0)
                 {
                     var nextLine = Console.ReadLine();
                     if (nextLine == null)
                         break;
                     else
-                        line = nextLine.Split();
+                        e = new FEnvironment(e.DataStack, e.WordDict, nextLine.Split(), e.ImmediateMode);
                 }
+                e = GetNext(e);
             }
-            DataStack.Push((FType.FInt, "1"));
-            DUP(DataStack);
-            ADD(DataStack);
-            DOT(DataStack);
 
             /* General strategy: 
                 * Global stack.
