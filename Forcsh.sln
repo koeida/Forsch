@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Forcsh", "Forcsh\Forcsh.csproj", "{D6CABD97-FD7D-42E9-B953-7BE65CCD759F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{32C257A6-ED4F-4936-ACCF-54B6BBF989A4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D6CABD97-FD7D-42E9-B953-7BE65CCD759F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D6CABD97-FD7D-42E9-B953-7BE65CCD759F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D6CABD97-FD7D-42E9-B953-7BE65CCD759F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D6CABD97-FD7D-42E9-B953-7BE65CCD759F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{32C257A6-ED4F-4936-ACCF-54B6BBF989A4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{32C257A6-ED4F-4936-ACCF-54B6BBF989A4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{32C257A6-ED4F-4936-ACCF-54B6BBF989A4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{32C257A6-ED4F-4936-ACCF-54B6BBF989A4}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
