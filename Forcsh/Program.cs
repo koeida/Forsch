@@ -9,7 +9,7 @@ namespace Forcsh
 {
     
     using FStack = Stack<(FType, String)>;
-    using FWordDict = Dictionary<string, Action<Stack<(FType, String)>>>;
+    using FWordDict = Dictionary<string, Func<FEnvironment, FEnvironment>>;
     
     public readonly struct FEnvironment
     {
@@ -41,49 +41,94 @@ namespace Forcsh
     {
         public static FStack DataStack = new FStack();
 
-        public static void DUP(FStack s)
+        public static FEnvironment DUP(FEnvironment e)
         {
+            var s = e.DataStack;
             s.Push(DataStack.Peek());
+            return new FEnvironment(s, WordDict, e.Input, e.ImmediateMode);
         }
 
-        public static void SWAP(FStack s)
+        public static FEnvironment SWAP(FEnvironment e)
         {
+            var s = e.DataStack;
             var top = s.Pop();
             var second = s.Pop();
             s.Push(top);
             s.Push(second);
+            return new FEnvironment(s, WordDict, e.Input, e.ImmediateMode);
         }
 
-        public static void DROP(FStack s)
+        public static FEnvironment DROP(FEnvironment e)
         {
+            var s = e.DataStack;
             s.Pop();
+            return new FEnvironment(s, WordDict, e.Input, e.ImmediateMode);
         }
 
-        public static void DOT(FStack s)
+        public static FEnvironment DOT(FEnvironment e)
         {
+            var s = e.DataStack;
             var (t, v) = s.Pop();
             System.Console.WriteLine(v);
+            return new FEnvironment(s, WordDict, e.Input, e.ImmediateMode);
         }
         
-        public static void EQ(FStack s)
+        public static FEnvironment EQ(FEnvironment e)
         {
+            var s = e.DataStack;
             var (xt, xv) = s.Pop();
             var (yt, yv) = s.Pop();
+            return new FEnvironment(s, WordDict, e.Input, e.ImmediateMode);
         }
 
-        public static void ADD(FStack s)
+        public static FEnvironment ADD(FEnvironment e)
         {
+            var s = e.DataStack;
             var (xt, xv) = s.Pop();
             var (yt, yv) = s.Pop();
             
             var result = System.Convert.ToInt32(xv) + System.Convert.ToInt32(yv);
             s.Push((FType.FInt, result.ToString()));
+            return new FEnvironment(s, WordDict, e.Input, e.ImmediateMode);
         }
 
-        public static void GET(FStack s)
+        public static FEnvironment GET(FEnvironment e)
         {
+            var s = e.DataStack;
             var inp = Console.ReadLine();
             s.Push((FType.FStr, inp));
+            return new FEnvironment(s, WordDict, e.Input, e.ImmediateMode);
+        }
+
+        public static FEnvironment SIKE(FEnvironment e)
+        {
+            return e;
+        }
+
+        public static Func<FEnvironment, FEnvironment> WordWrapper(IEnumerable<String> wordData)
+        {
+            return (FEnvironment e) =>
+            {
+                var oldInput = e.Input;
+                var tempEnv = new FEnvironment(e.DataStack, e.WordDict, wordData, e.ImmediateMode);
+                while (true)
+                {
+                    if (tempEnv.Input.Count() == 0)
+                        break;
+                    tempEnv = GetNext(tempEnv);
+                }
+
+                return new FEnvironment(tempEnv.DataStack, tempEnv.WordDict, oldInput, tempEnv.ImmediateMode);
+            };
+        }
+
+        public static FEnvironment WORD(FEnvironment e)
+        {
+            var wordName = e.Input.First();
+            var wordData = e.Input.Skip(1);
+            e.WordDict[wordName] = WordWrapper(wordData);
+
+            return new FEnvironment(e.DataStack, e.WordDict, new string[] { }, e.ImmediateMode);
         }
 
         public static FWordDict WordDict = new FWordDict
@@ -94,6 +139,8 @@ namespace Forcsh
             ["DUP"] = DUP,
             ["DROP"] = DROP,
             ["SWAP"] = SWAP,
+            [":"] = WORD,
+            [";"] = SIKE
         };
         
         public static (FType, String) Tokenize(string s, FWordDict wordDict)
@@ -120,21 +167,15 @@ namespace Forcsh
         public static FEnvironment GetNext(FEnvironment e)
         {
             var (tail, (t, v)) = TokenizeHead(e);
-            if (e.ImmediateMode)
+            if (t == FType.FWord)
             {
-                if (t == FType.FWord)
-                {
-                    Console.Out.WriteLine("Executing word " + v);
-                    e.WordDict[v](e.DataStack);
-                    
-                }
-                else
-                {
-                    Console.Out.WriteLine("pushing value onto stack: " + v);
-                    e.DataStack.Push((t, v));
-                }
-            } 
-            return new FEnvironment(e.DataStack, e.WordDict, tail, e.ImmediateMode);
+                return e.WordDict[v](new FEnvironment(e.DataStack, e.WordDict, tail, e.ImmediateMode));
+            }
+            else
+            {
+                e.DataStack.Push((t, v));
+                return new FEnvironment(e.DataStack, e.WordDict, tail, e.ImmediateMode);
+            }
         }
 
         public static (IEnumerable<string> tail, (FType, string) token) TokenizeHead(FEnvironment e)
@@ -159,6 +200,7 @@ namespace Forcsh
                     else
                         e = new FEnvironment(e.DataStack, e.WordDict, nextLine.Split(), e.ImmediateMode);
                 }
+
                 e = GetNext(e);
             }
 
