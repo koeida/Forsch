@@ -37,14 +37,14 @@ namespace Forcsh
     {
         public static FStack DataStack = new FStack();
 
-        public static FEnvironment DUP(FEnvironment e)
+        public static FEnvironment FDup(FEnvironment e)
         {
             var s = e.DataStack;
             s.Push(DataStack.Peek());
             return new FEnvironment(s, WordDict, e.Input, e.ImmediateMode);
         }
 
-        public static FEnvironment SWAP(FEnvironment e)
+        public static FEnvironment FSwap(FEnvironment e)
         {
             var s = e.DataStack;
             var top = s.Pop();
@@ -54,14 +54,14 @@ namespace Forcsh
             return new FEnvironment(s, WordDict, e.Input, e.ImmediateMode);
         }
 
-        public static FEnvironment DROP(FEnvironment e)
+        public static FEnvironment FDrop(FEnvironment e)
         {
             var s = e.DataStack;
             s.Pop();
             return new FEnvironment(s, WordDict, e.Input, e.ImmediateMode);
         }
 
-        public static FEnvironment DOT(FEnvironment e)
+        public static FEnvironment FDot(FEnvironment e)
         {
             var s = e.DataStack;
             var (t, v) = s.Pop();
@@ -69,7 +69,7 @@ namespace Forcsh
             return new FEnvironment(s, WordDict, e.Input, e.ImmediateMode);
         }
 
-        public static FEnvironment EQ(FEnvironment e)
+        public static FEnvironment FEq(FEnvironment e)
         {
             var s = e.DataStack;
             var (xt, xv) = s.Pop();
@@ -83,7 +83,7 @@ namespace Forcsh
             return new FEnvironment(s, WordDict, e.Input, e.ImmediateMode);
         }
 
-        public static FEnvironment ADD(FEnvironment e)
+        public static FEnvironment FAdd(FEnvironment e)
         {
             var s = e.DataStack;
             var (xt, xv) = s.Pop();
@@ -102,7 +102,7 @@ namespace Forcsh
             return new FEnvironment(s, WordDict, e.Input, e.ImmediateMode);
         }
 
-        public static FEnvironment BRANCHF(FEnvironment e)
+        public static FEnvironment FBranchOnFalse(FEnvironment e)
         {
             var offset = Convert.ToInt32(e.Input.First());
             var tail = e.Input.Skip(1);
@@ -129,7 +129,7 @@ namespace Forcsh
         // "Surveys" the contents of the stack.
         // That is, it outputs the whole stack:
         // left is the bottommost, right is the topmost
-        public static FEnvironment SURVEY(FEnvironment e)
+        public static FEnvironment FSurvey(FEnvironment e)
         {
             var s = e
                 .DataStack
@@ -141,16 +141,16 @@ namespace Forcsh
             return e;
         }
 
-        public static FEnvironment ASSERT(FEnvironment e)
+        public static FEnvironment FAssert(FEnvironment e)
         {
             var (bt, bv) = e.DataStack.Pop();
             if (bt == FType.FBool && bv == "True")
                 return e;
             else
-                throw new Exception("ASSERT Failed");
+                throw new Exception("FAssert Failed");
         }
 
-        public static FEnvironment SIKE(FEnvironment e)
+        public static FEnvironment FSike(FEnvironment e)
         {
             return e;
         }
@@ -172,7 +172,7 @@ namespace Forcsh
             };
         }
 
-        public static FEnvironment WORD(FEnvironment e)
+        public static FEnvironment FWord(FEnvironment e)
         {
             var wordName = e.Input.First();
             var wordData = e.Input.Skip(1);
@@ -183,17 +183,17 @@ namespace Forcsh
 
         public static FWordDict WordDict = new FWordDict
         {
-            ["+"] = ADD,
-            ["."] = DOT,
-            ["="] = EQ,
-            [":"] = WORD,
-            [";"] = SIKE,
-            ["DUP"] = DUP,
-            ["DROP"] = DROP,
-            ["ASSERT"] = ASSERT,
-            ["SWAP"] = SWAP,
-            ["BRANCHF"] = BRANCHF,
-            ["SURVEY"] = SURVEY,
+            ["+"] = FAdd,
+            ["."] = FDot,
+            ["="] = FEq,
+            [":"] = FWord,
+            [";"] = FSike,
+            ["DUP"] = FDup,
+            ["DROP"] = FDrop,
+            ["ASSERT"] = FAssert,
+            ["SWAP"] = FSwap,
+            ["BRANCHF"] = FBranchOnFalse,
+            ["SURVEY"] = FSurvey,
             ["("] = COMMENT,
         };
         
