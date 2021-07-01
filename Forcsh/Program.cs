@@ -118,7 +118,7 @@ namespace Forcsh
             }
         }
 
-        public static FEnvironment COMMENT(FEnvironment e)
+        public static FEnvironment FComment(FEnvironment e)
         {
             var tail = e.Input
                 .SkipWhile(w => w != ")")
@@ -194,7 +194,7 @@ namespace Forcsh
             ["SWAP"] = FSwap,
             ["BRANCHF"] = FBranchOnFalse,
             ["SURVEY"] = FSurvey,
-            ["("] = COMMENT,
+            ["("] = FComment,
         };
         
         public static (FType, String) Tokenize(string s, FWordDict wordDict)
@@ -246,7 +246,7 @@ namespace Forcsh
             var e = new FEnvironment(DataStack, WordDict, line, true);
             while (true)
             {
-                if (e.Input.Count() == 0)
+                if (!e.Input.Any())
                 {
                     var nextLine = Console.ReadLine();
                     if (nextLine == null)
