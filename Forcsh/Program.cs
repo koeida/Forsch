@@ -1,13 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
-using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace Forcsh
 {
-    
     using FStack = Stack<(FType, String)>;
     using FWordDict = Dictionary<string, Func<FEnvironment, FEnvironment>>;
     
@@ -255,6 +251,8 @@ namespace Forcsh
                     var nextLine = Console.ReadLine();
                     if (nextLine == null)
                         break;
+                    else if (nextLine.Trim() == "")
+                        continue;
                     else
                         e = new FEnvironment(e.DataStack, e.WordDict, nextLine.Split(), e.ImmediateMode);
                 }
