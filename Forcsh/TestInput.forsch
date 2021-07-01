@@ -1,7 +1,13 @@
 ( *** Test Suite in Forsch! *** )
 
-( Basic Integer Arithmetic )
+( Basic Arithmetic )
 1 1 + 2 = ASSERT
+1.1 8.9 + 10.0 = ASSERT
+
+( Exercising all the builtin words )
+1 2 SWAP 1 = ASSERT
+1 2 DROP 1 = ASSERT
+1 Testing_dot_word_please_ignore_me . 1 = ASSERT
 
 ( Defining new words )
 : DOUBLE DUP + ;
@@ -17,4 +23,4 @@
 ( Comments have no effect on the stack )
 10 ( velim monstrare me sine difficultate posse commentare ) 10 = ASSERT
 
-ALL_FORSCH_TESTS_PASS!!! .
+😍😍😍_ALL_FORSCH_TESTS_PASS_😍😍😍 .

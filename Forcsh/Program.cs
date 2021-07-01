@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 
 namespace Forcsh
@@ -13,6 +14,15 @@ namespace Forcsh
         Eval
     };
     
+    public enum FType
+    {
+        FStr,
+        FFloat,
+        FInt,
+        FWord,
+        FBool
+    }
+    
     public readonly struct FEnvironment
     {
         public FStack DataStack { get; }
@@ -22,6 +32,7 @@ namespace Forcsh
         
         public FEnvironment(FStack dataStack, FWordDict wordDict, IEnumerable<string> input, FMode mode)
         {
+            //Note to self: Let there be a debug mode that changes this constructor to assign *copies* of all the arguments.
             DataStack = dataStack;
             WordDict = wordDict;
             Input = input;
@@ -29,19 +40,15 @@ namespace Forcsh
         }
     }
 
-    public enum FType
-    {
-        FStr,
-        FFloat,
-        FInt,
-        FWord,
-        FBool
-    }
-
     public static class Program
     {
         public static FStack DataStack = new FStack();
 
+        /// <summary>
+        /// Duplicates the top element of the stack 
+        /// </summary>
+        /// <param name="e">Current environment</param>
+        /// <returns>New environment</returns>
         public static FEnvironment FDup(FEnvironment e)
         {
             var s = e.DataStack;
@@ -49,6 +56,11 @@ namespace Forcsh
             return new FEnvironment(s, WordDict, e.Input, e.Mode);
         }
 
+        /// <summary>
+        /// Swaps the top two elements of the stack. 
+        /// </summary>
+        /// <param name="e">Current environment</param>
+        /// <returns>New environment</returns>
         public static FEnvironment FSwap(FEnvironment e)
         {
             var s = e.DataStack;
@@ -59,6 +71,11 @@ namespace Forcsh
             return new FEnvironment(s, WordDict, e.Input, e.Mode);
         }
 
+        /// <summary>
+        /// Pops the top element off the data stack and immediately disposes of it
+        /// </summary>
+        /// <param name="e">Current environment</param>
+        /// <returns>New environment</returns>
         public static FEnvironment FDrop(FEnvironment e)
         {
             var s = e.DataStack;
@@ -66,6 +83,11 @@ namespace Forcsh
             return new FEnvironment(s, WordDict, e.Input, e.Mode);
         }
 
+        /// <summary>
+        /// Like FDrop, but prints the top of the stack to the console before disposing of it.
+        /// </summary>
+        /// <param name="e">Current environment</param>
+        /// <returns>New environment</returns>
         public static FEnvironment FDot(FEnvironment e)
         {
             var s = e.DataStack;
@@ -74,36 +96,52 @@ namespace Forcsh
             return new FEnvironment(s, WordDict, e.Input, e.Mode);
         }
 
+        /// <summary>
+        /// Pops the top two elements of the stack.
+        /// If they're not of the same type, throw an exception.
+        /// If they're of the same type, pushes True if they're equal, False if they're not.
+        /// </summary>
+        /// <param name="e">Current environment</param>
+        /// <returns>New environment</returns>
         public static FEnvironment FEq(FEnvironment e)
         {
             var s = e.DataStack;
             var (xt, xv) = s.Pop();
             var (yt, yv) = s.Pop();
-            if (xt == FType.FInt && yt == FType.FInt)
-            {
-                var res = System.Convert.ToInt32(xv) == System.Convert.ToInt32(yv);
-                s.Push((FType.FBool, res.ToString()));
-            }
+            if (xt != yt)
+                throw new Exception($"Unable to compare equality of ({xt},{xv}) and ({yt}, {yv})");
+
+            var res = false;
+            if (xt == FType.FInt)
+                res = System.Convert.ToInt32(xv) == System.Convert.ToInt32(yv);
+            else if (xt == FType.FFloat)
+                res = Math.Abs(System.Convert.ToSingle(xv) - System.Convert.ToSingle(yv)) < 0.0001;
+            else if (new FType[] {FType.FStr, FType.FWord, FType.FBool}.Contains(xt) )
+                res = xv == yv;
+            
+            s.Push((FType.FBool, res.ToString()));
 
             return new FEnvironment(s, WordDict, e.Input, e.Mode);
         }
 
+        
         public static FEnvironment FAdd(FEnvironment e)
         {
             var s = e.DataStack;
             var (xt, xv) = s.Pop();
             var (yt, yv) = s.Pop();
+            if (xt != yt)
+                throw new Exception($"Unable to compare equality of ({xt},{xv}) and ({yt}, {yv})");
 
-            var result = System.Convert.ToInt32(xv) + System.Convert.ToInt32(yv);
-            s.Push((FType.FInt, result.ToString()));
-            return new FEnvironment(s, WordDict, e.Input, e.Mode);
-        }
-
-        public static FEnvironment GET(FEnvironment e)
-        {
-            var s = e.DataStack;
-            var inp = Console.ReadLine();
-            s.Push((FType.FStr, inp));
+            var res = "";
+            if (xt == FType.FInt)
+                res = (System.Convert.ToInt32(xv) + System.Convert.ToInt32(yv)).ToString();
+            else if (xt == FType.FFloat)
+                res = $"{System.Convert.ToSingle(xv) + System.Convert.ToSingle(yv):0.0000}";
+            else if (new FType[] {FType.FStr, FType.FWord, FType.FBool}.Contains(xt))
+                res = (xv == yv).ToString();
+            s.Push((xt, res));
+            
             return new FEnvironment(s, WordDict, e.Input, e.Mode);
         }
 
