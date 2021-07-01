@@ -122,6 +122,14 @@ namespace Forcsh
             }
         }
 
+        public static FEnvironment COMMENT(FEnvironment e)
+        {
+            var tail = e.Input
+                .SkipWhile(w => w != ")")
+                .Skip(1);
+            return new FEnvironment(e.DataStack, e.WordDict, tail, e.ImmediateMode);
+        }
+
         // "Surveys" the contents of the stack.
         // That is, it outputs the whole stack:
         // left is the bottommost, right is the topmost

@@ -1,7 +1,14 @@
+( Test Suite in Forsch! )
+( Basic Integer Arithmetic )
 1 1 + 2 = ASSERT
+( Defining new words )
 : DOUBLE DUP + ;
-: QUAD DOUBLE DOUBLE ;
 5 DOUBLE 10 = ASSERT
+( Defining new words that use other new words )
+: QUAD DOUBLE DOUBLE ;
 4 QUAD 16 = ASSERT
+( Branch word successfully jumps over the correct number of words )
 50 False BRANCHF 2 10 20 20 = ASSERT 50 = ASSERT
+( Comments have no effect on the stack )
+10 ( velim monstrare me sine difficultate posse commentare ) 10 = ASSERT
 ALL_FORSCH_TESTS_PASS!!! .
