@@ -17,13 +17,13 @@ namespace Tests
         public void TestTokenizeHead()
         {
             var ss = new string[] {"5","5","+"};
-            var e = new FEnvironment(new FStack(), f.WordDict, ss, true);
+            var e = new FEnvironment(new FStack(), f.WordDict, ss, FMode.Eval);
             var (tail, token) = f.TokenizeHead(e);
             Assert.AreEqual((FType.FInt, "5"), token);
             Assert.AreEqual(new List<string>(new string[] {"5", "+"}), new List<string>(tail));
             
             var ss2 = new string[] {"+", "."};
-            var e2 = new FEnvironment(new FStack(), f.WordDict, ss2, true);
+            var e2 = new FEnvironment(new FStack(), f.WordDict, ss2, FMode.Eval);
             var (_, token2) = f.TokenizeHead(e2);
             Assert.AreEqual((FType.FWord, "+"), token2);
         }
