@@ -36,7 +36,7 @@ namespace Forcsh
         FWord,
         FBool
     }
-    
+
     public static class Program
     {
         public static FStack DataStack = new FStack();
@@ -72,12 +72,18 @@ namespace Forcsh
             System.Console.WriteLine(v);
             return new FEnvironment(s, WordDict, e.Input, e.ImmediateMode);
         }
-        
+
         public static FEnvironment EQ(FEnvironment e)
         {
             var s = e.DataStack;
             var (xt, xv) = s.Pop();
             var (yt, yv) = s.Pop();
+            if (xt == FType.FInt && yt == FType.FInt)
+            {
+                var res = System.Convert.ToInt32(xv) == System.Convert.ToInt32(yv);
+                s.Push((FType.FBool, res.ToString()));
+            }
+
             return new FEnvironment(s, WordDict, e.Input, e.ImmediateMode);
         }
 
@@ -86,7 +92,7 @@ namespace Forcsh
             var s = e.DataStack;
             var (xt, xv) = s.Pop();
             var (yt, yv) = s.Pop();
-            
+
             var result = System.Convert.ToInt32(xv) + System.Convert.ToInt32(yv);
             s.Push((FType.FInt, result.ToString()));
             return new FEnvironment(s, WordDict, e.Input, e.ImmediateMode);
@@ -98,6 +104,46 @@ namespace Forcsh
             var inp = Console.ReadLine();
             s.Push((FType.FStr, inp));
             return new FEnvironment(s, WordDict, e.Input, e.ImmediateMode);
+        }
+
+        public static FEnvironment BRANCHF(FEnvironment e)
+        {
+            var offset = Convert.ToInt32(e.Input.First());
+            var tail = e.Input.Skip(1);
+            var (bt, bv) = e.DataStack.Pop();
+            if (bt == FType.FBool && bv == "False")
+            {
+                var newInput = tail.Skip(offset - 1);
+                return new FEnvironment(e.DataStack, e.WordDict, newInput, e.ImmediateMode);
+            }
+            else
+            {
+                return new FEnvironment(e.DataStack, e.WordDict, tail, e.ImmediateMode);
+            }
+        }
+
+        // "Surveys" the contents of the stack.
+        // That is, it outputs the whole stack:
+        // left is the bottommost, right is the topmost
+        public static FEnvironment SURVEY(FEnvironment e)
+        {
+            var s = e
+                .DataStack
+                .Reverse()
+                .Aggregate("", (a, x) => a + " " + x.Item2)
+                .Trim();
+                
+            Console.Out.WriteLine(s);
+            return e;
+        }
+
+        public static FEnvironment ASSERT(FEnvironment e)
+        {
+            var (bt, bv) = e.DataStack.Pop();
+            if (bt == FType.FBool && bv == "True")
+                return e;
+            else
+                throw new Exception("ASSERT Failed");
         }
 
         public static FEnvironment SIKE(FEnvironment e)
@@ -136,11 +182,15 @@ namespace Forcsh
             ["+"] = ADD,
             ["."] = DOT,
             ["="] = EQ,
+            [":"] = WORD,
+            [";"] = SIKE,
             ["DUP"] = DUP,
             ["DROP"] = DROP,
+            ["ASSERT"] = ASSERT,
             ["SWAP"] = SWAP,
-            [":"] = WORD,
-            [";"] = SIKE
+            ["BRANCHF"] = BRANCHF,
+            ["SURVEY"] = SURVEY,
+            ["("] = COMMENT,
         };
         
         public static (FType, String) Tokenize(string s, FWordDict wordDict)
@@ -203,20 +253,6 @@ namespace Forcsh
 
                 e = GetNext(e);
             }
-
-            /* General strategy: 
-                * Global stack.
-                * Words are functions with no params that modify global stack
-                * Output everything to cs file
-                * Win
-            
-            * Builtins:
-                * DUP
-                * SWAP
-                * DROP
-                * . (pop & print)
-                * = (pop top two, compare, 1 if eq, 0 if not)
-            */
         }
     }
 }

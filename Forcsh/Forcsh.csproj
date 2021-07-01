@@ -64,6 +64,7 @@
         <Compile Include="Properties\AssemblyInfo.cs" />
     </ItemGroup>
     <ItemGroup>
+      <Content Include="run_tests.sh" />
       <Content Include="TestInput.forsch" />
     </ItemGroup>
     <ItemGroup>
