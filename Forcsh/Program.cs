@@ -7,13 +7,26 @@ namespace Forcsh
 {
     using FStack = Stack<(FType, String)>;
     using FWordDict = Dictionary<string, Func<FEnvironment, FEnvironment>>;
-
+    
+    /// <summary>
+    /// Represents the different modes of the Forsch interpreter. Usually Forths switch between
+    /// immediate mode and compile mode, but this one works a little different.
+    /// Halt indicates that the environment should stop interpreting.
+    /// Eval indicates that the environment should continue interpreting.
+    /// </summary>
     public enum FMode
     {
         Halt,
         Eval
     };
     
+    /// <summary>
+    /// The basic set of types in Forsch.
+    /// FWord represents a Forsch word (a subroutine reference)
+    /// An FNull token is used to indicate that the program or subroutine should terminate:
+    /// It's pushed onto the stack when the input stream is empty.
+    /// The rest map onto C# types.
+    /// </summary>
     public enum FType
     {
         FStr,
@@ -24,16 +37,33 @@ namespace Forcsh
         FBool
     }
     
+    /// <summary>
+    /// Holds all the information about the current execution context,
+    /// passed around to and from almost every function.
+    /// It was written as readonly with the intention of making it immutable
+    /// for ease of debugging and testing.
+    /// </summary>
     public readonly struct FEnvironment
     {
+        /// <summary>
+        /// "The Stack" -- the main Forth stack. Sometimes Forths use other stacks, but Forsch has only one.
+        /// </summary>
         public FStack DataStack { get; }
+        /// <summary>
+        /// The dictionary containing all premade words, along with any user-defined words added at runtime.
+        /// </summary>
         public FWordDict WordDict { get; }
+        /// <summary>
+        /// The list of words to be evaluated.
+        /// </summary>
         public IEnumerable<String> Input { get; }
+        /// <summary>
+        /// The current mode, as described in the enum above.
+        /// </summary>
         public FMode Mode { get; }
         
         public FEnvironment(FStack dataStack, FWordDict wordDict, IEnumerable<string> input, FMode mode)
         {
-            //Note to self: Let there be a debug mode that changes this constructor to assign *copies* of all the arguments.
             DataStack = dataStack;
             WordDict = wordDict;
             Input = input;
@@ -358,6 +388,12 @@ namespace Forcsh
             }
         }
 
+        /// <summary>
+        /// Reads a word from input and converts it to a token
+        /// </summary>
+        /// <param name="input">The current list of untokenized strings</param>
+        /// <param name="wordDict">The word dictionary</param>
+        /// <returns>A Forsch token</returns>
         public static (IEnumerable<string> tail, (FType, string) token) TokenizeHead(IEnumerable<string> input, FWordDict wordDict)
         {
             var head = input.First();
@@ -366,6 +402,15 @@ namespace Forcsh
             return (tail, token);
         }
 
+        /// <summary>
+        /// Tokenizes the next word from the current line.
+        /// If the current line has been completely tokenized, grab a new line from the input stream.
+        /// Null token returned if stream empty.
+        /// </summary>
+        /// <param name="input">Current list of untokenized words</param>
+        /// <param name="readLine">Function to grab a new line from a stream</param>
+        /// <param name="wordDict">The Forsch word dictionary</param>
+        /// <returns></returns>
         public static ((FType, String) token, IEnumerable<string> tail) Read(IEnumerable<string> input,  Func<string> readLine, FWordDict wordDict)
         {
             if (!input.Any())
@@ -384,6 +429,14 @@ namespace Forcsh
             }
         }
 
+        /// <summary>
+        /// Given a Forsch environment and a function to read lines from the stream,
+        /// this begins an evaluation loop on that stream until it is complete,
+        /// returning the new Forsch environment.
+        /// </summary>
+        /// <param name="e">Current environment</param>
+        /// <param name="readLine">Function to grab a line from a stream</param>
+        /// <returns>New environment</returns>
         public static FEnvironment RunInterpreter(FEnvironment e, Func<string> readLine)
         {
             while (e.Mode != FMode.Halt)
@@ -396,6 +449,10 @@ namespace Forcsh
             return e;
         }
 
+        /// <summary>
+        /// Spins up a new Forsch interpreter on standard input
+        /// </summary>
+        /// <param name="args"></param>
         public static void Main(string[] args)
         {
             var e = new FEnvironment(DataStack, WordDict, new List<string>(), FMode.Eval);
