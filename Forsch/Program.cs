@@ -9,7 +9,7 @@ using System.Text;
 namespace Forsch
 {
     using FStack = Stack<(FType, String)>;
-    using FWordDict = Dictionary<string, Func<FEnvironment, FEnvironment>>;
+    using FWordDict = Dictionary<string, (Func<FEnvironment, FEnvironment>, bool)>;
     
     /// <summary>
     /// Represents the different modes of the Forsch interpreter. Usually Forths switch between
@@ -441,36 +441,50 @@ namespace Forsch
         public static FEnvironment FWord(FEnvironment e)
         {
             var wordName = e.Input[e.InputIndex];
-            var wordData = e.Input.Skip(2).ToList();
-            e.WordDict[wordName] = WordWrapper(wordData);
+            int wordDataSkip; bool immediateMode;
+            if (e.Input[e.InputIndex + 1] == "IMMEDIATE")
+            {
+                wordDataSkip = 3;
+                immediateMode = true;
+            }
+            else
+            {
+                wordDataSkip = 2;
+                immediateMode = false;
+            }
+            var wordData = e.Input.Skip(wordDataSkip).ToList();
+            e.WordDict[wordName] = (WordWrapper(wordData), immediateMode);
 
             return new FEnvironment(e.DataStack, e.WordDict, new List<String>(), e.Mode, e.InputIndex);
         }
 
         /// <summary>
         /// Built-in words.
+        /// The boolean indicates whether it's called in immediate mode or not:
+        /// that is, whether it'll be interpreted/executed even if we're in the middle
+        /// of compiling a word.
         /// </summary>
         public static FWordDict WordDict = new FWordDict
         {
-            ["+"] = FAdd,
-            ["*"] = FMult,
-            ["."] = FDot,
-            ["="] = FEq,
-            [":"] = FWord,
-            [";"] = FEndWord,
-            ["DUP"] = FDup,
-            ["DROP"] = FDrop,
-            ["ASSERT"] = FAssert,
-            ["SWAP"] = FSwap,
-            ["BRANCH"] = FBranch,
-            ["BRANCHF"] = FBranchOnFalse,
-            ["SURVEY"] = FSurvey,
-            ["EMPTY?"] = FIsEmpty,
-            ["HERE"] = FHere,
-            ["!"] = FStore,
-            [","] = FDictInsert,
-            ["\""] = FToString,
-            ["("] = FComment,
+            ["+"] = (FAdd, false),
+            ["*"] = (FMult, false),
+            ["."] = (FDot, false),
+            ["="] = (FEq, false),
+            [":"] = (FWord, false),
+            [";"] = (FEndWord, false),
+            ["DUP"] = (FDup, false),
+            ["DROP"] = (FDrop, false),
+            ["ASSERT"] = (FAssert, false),
+            ["SWAP"] = (FSwap, false),
+            ["BRANCH"] = (FBranch, false),
+            ["BRANCHF"] = (FBranchOnFalse, false),
+            ["SURVEY"] = (FSurvey, false),
+            ["EMPTY?"] = (FIsEmpty, false),
+            ["HERE"] = (FHere, false),
+            ["!"] = (FStore, false),
+            [","] = (FDictInsert, false),
+            ["\""] = (FToString, false),
+            ["("] = (FComment, false),
         };
         
         /// <summary>
@@ -518,7 +532,8 @@ namespace Forsch
             
             if (t == FType.FWord)
             {
-                return e.WordDict[v](e);
+                var (wordFunction, immediateMode) = e.WordDict[v];
+                return wordFunction(e);
             }
             else
             {
