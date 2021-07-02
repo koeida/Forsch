@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Security.Permissions;
 
 namespace Forcsh
@@ -42,6 +43,8 @@ namespace Forcsh
     /// passed around to and from almost every function.
     /// It was written as readonly with the intention of making it immutable
     /// for ease of debugging and testing.
+    ///
+    /// In C# 9 I would use records for this, since that's what I'm poorly imitating here throughout.
     /// </summary>
     public readonly struct FEnvironment
     {
@@ -212,6 +215,13 @@ namespace Forcsh
             
         }
 
+        public static int ReadOffset(List<string> input, int curIndex)
+        {
+            if (!int.TryParse(input[curIndex], out var offset))
+                throw new Exception("Attempted to branch with no branch offset");
+            return offset;
+        }
+
         /// <summary>
         /// A quirky word.
         /// The stack has to look like this: boolean BRANCHF int
@@ -224,21 +234,26 @@ namespace Forcsh
         /// <exception cref="Exception">Throws exception if no boolean on the stack or if no integer following</exception>
         public static FEnvironment FBranchOnFalse(FEnvironment e)
         {
-            if (!int.TryParse(e.Input.First(), out var offset))
-                throw new Exception("Attempted to branch with no branch offset");
-            
+            var offset = ReadOffset(e.Input, e.InputIndex);
             var (bt, bv) = e.DataStack.Pop();
             if (bt != FType.FBool)
                 throw new Exception("Attempted to branch with non-boolean value");
-            
+
             if (bv == "False")
-            {
-                return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex + offset - 1);
-            }
+                return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex + offset);
             else
-            {
-                return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex + 1);
-            }
+                return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex);
+        }
+
+        /// <summary>
+        /// Shifts the input index by a relative amount indicated by the next word in the input 
+        /// </summary>
+        /// <param name="e">Current environment</param>
+        /// <returns>New Environment</returns>
+        public static FEnvironment FBranch(FEnvironment e)
+        {  
+            var offset = ReadOffset(e.Input, e.InputIndex);
+            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex + offset);
         }
 
         /// <summary>
@@ -288,6 +303,18 @@ namespace Forcsh
                 return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex);
             else
                 throw new Exception("Assert Failed");
+        }
+
+        /// <summary>
+        /// Returns true if stack is empty, false otherwise.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        public static FEnvironment FIsEmpty(FEnvironment e)
+        {
+            var isEmpty = !e.DataStack.Any();
+            e.DataStack.Push((FType.FBool, isEmpty.ToString()));
+            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex);
         }
 
         /// <summary>
@@ -354,8 +381,10 @@ namespace Forcsh
             ["DROP"] = FDrop,
             ["ASSERT"] = FAssert,
             ["SWAP"] = FSwap,
+            ["BRANCH"] = FBranch,
             ["BRANCHF"] = FBranchOnFalse,
             ["SURVEY"] = FSurvey,
+            ["EMPTY?"] = FIsEmpty,
             ["("] = FComment,
         };
         
@@ -385,7 +414,7 @@ namespace Forcsh
                 else if (float.TryParse(s, out f))
                     return (FType.FFloat, s);
                 else if (bool.TryParse(s, out b))
-                    return (FType.FBool, s);
+                    return (FType.FBool, b.ToString());
                 else
                     return (FType.FStr, s);
             }
@@ -430,7 +459,7 @@ namespace Forcsh
                 if (nextLine == null)
                     return ((FType.FNull, null), input, 0);
                 else if (nextLine.Trim() == "")
-                    return Read(input, 0 , readLine, wordDict);
+                    return Read(new List<string>(), 0 , readLine, wordDict);
                 else
                     return Read(new List<string>(nextLine.Trim().Split()), 0, readLine, wordDict);
             }

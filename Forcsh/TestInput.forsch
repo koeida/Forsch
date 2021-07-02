@@ -6,6 +6,7 @@
 1.25 2.0 * 2.5 = ASSERT
 
 ( Exercising builtin words )
+EMPTY? True = ASSERT 
 1 2 SWAP 1 = ASSERT 2 = ASSERT
 1 2 DROP 1 = ASSERT
 true true = ASSERT
@@ -23,8 +24,10 @@ Testing_survey_word_please_ignore_me SURVEY Testing_survey_word_please_ignore_me
 : QUAD DOUBLE DOUBLE ;
 4 QUAD 16 = ASSERT
 
+
 ( Branch word successfully jumps over the correct number of words )
-50 False BRANCHF 2 10 20 20 = ASSERT 50 = ASSERT
+BRANCH 2 100 200 200 = ASSERT EMPTY? ASSERT
+False BRANCHF 2 100 200 200 = ASSERT SURVEY EMPTY? ASSERT
 
 ( Comments have no effect on the stack )
 10 ( velim monstrare me sine difficultate posse commentare ) 10 = ASSERT
