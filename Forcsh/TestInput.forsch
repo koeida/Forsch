@@ -1,5 +1,4 @@
 ( *** Test Suite in Forsch! *** )
-
 ( Basic Arithmetic )
 1 1 + 2 = ASSERT
 1.1 8.9 + 10.0 = ASSERT

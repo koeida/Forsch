@@ -56,17 +56,23 @@ namespace Forcsh
         /// <summary>
         /// The list of words to be evaluated.
         /// </summary>
-        public IEnumerable<String> Input { get; }
+        public List<String> Input { get; }
         /// <summary>
         /// The current mode, as described in the enum above.
         /// </summary>
         public FMode Mode { get; }
         
-        public FEnvironment(FStack dataStack, FWordDict wordDict, IEnumerable<string> input, FMode mode)
+        /// <summary>
+        /// Current index of next word to consume.
+        /// </summary>
+        public int InputIndex { get; }
+        
+        public FEnvironment(FStack dataStack, FWordDict wordDict, List<string> input, FMode mode, int inputIndex)
         {
             DataStack = dataStack;
             WordDict = wordDict;
             Input = input;
+            InputIndex = inputIndex;
             Mode = mode;
         }
     }
@@ -84,7 +90,7 @@ namespace Forcsh
         {
             var s = e.DataStack;
             s.Push(DataStack.Peek());
-            return new FEnvironment(s, WordDict, e.Input, e.Mode);
+            return new FEnvironment(s, WordDict, e.Input, e.Mode, e.InputIndex);
         }
 
         /// <summary>
@@ -99,7 +105,7 @@ namespace Forcsh
             var second = s.Pop();
             s.Push(top);
             s.Push(second);
-            return new FEnvironment(s, WordDict, e.Input, e.Mode);
+            return new FEnvironment(s, WordDict, e.Input, e.Mode, e.InputIndex);
         }
 
         /// <summary>
@@ -111,7 +117,7 @@ namespace Forcsh
         {
             var s = e.DataStack;
             s.Pop();
-            return new FEnvironment(s, WordDict, e.Input, e.Mode);
+            return new FEnvironment(s, WordDict, e.Input, e.Mode, e.InputIndex);
         }
 
         /// <summary>
@@ -124,7 +130,7 @@ namespace Forcsh
             var s = e.DataStack;
             var (t, v) = s.Pop();
             System.Console.WriteLine(v);
-            return new FEnvironment(s, WordDict, e.Input, e.Mode);
+            return new FEnvironment(s, WordDict, e.Input, e.Mode, e.InputIndex);
         }
 
         /// <summary>
@@ -152,7 +158,7 @@ namespace Forcsh
             
             s.Push((FType.FBool, res.ToString()));
 
-            return new FEnvironment(s, WordDict, e.Input, e.Mode);
+            return new FEnvironment(s, WordDict, e.Input, e.Mode, e.InputIndex);
         }
 
         /// <summary>
@@ -181,7 +187,7 @@ namespace Forcsh
                 throw new Exception($"Unable to add value of type {xt}");
             s.Push((xt, res));
             
-            return new FEnvironment(s, WordDict, e.Input, e.Mode);
+            return new FEnvironment(s, WordDict, e.Input, e.Mode, e.InputIndex);
         }
 
         public static FEnvironment FMult(FEnvironment e)
@@ -202,7 +208,7 @@ namespace Forcsh
                 
             s.Push((xt, res));
             
-            return new FEnvironment(s, WordDict, e.Input, e.Mode);
+            return new FEnvironment(s, WordDict, e.Input, e.Mode, e.InputIndex);
             
         }
 
@@ -221,19 +227,17 @@ namespace Forcsh
             if (!int.TryParse(e.Input.First(), out var offset))
                 throw new Exception("Attempted to branch with no branch offset");
             
-            var tail = e.Input.Skip(1);
             var (bt, bv) = e.DataStack.Pop();
             if (bt != FType.FBool)
                 throw new Exception("Attempted to branch with non-boolean value");
             
             if (bv == "False")
             {
-                var newInput = tail.Skip(offset - 1);
-                return new FEnvironment(e.DataStack, e.WordDict, newInput, e.Mode);
+                return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex + offset - 1);
             }
             else
             {
-                return new FEnvironment(e.DataStack, e.WordDict, tail, e.Mode);
+                return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex + 1);
             }
         }
 
@@ -245,10 +249,9 @@ namespace Forcsh
         /// <returns>New environment</returns>
         public static FEnvironment FComment(FEnvironment e)
         {
-            var tail = e.Input
-                .SkipWhile(w => w != ")")
-                .Skip(1);
-            return new FEnvironment(e.DataStack, e.WordDict, tail, e.Mode);
+            var newIndex = e.Input.IndexOf(")");
+
+            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, newIndex + 1);
         }
 
         /// <summary>
@@ -282,7 +285,7 @@ namespace Forcsh
         {
             var (bt, bv) = e.DataStack.Pop();
             if (bt == FType.FBool && bv == "True")
-                return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode);
+                return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex);
             else
                 throw new Exception("Assert Failed");
         }
@@ -294,7 +297,7 @@ namespace Forcsh
         /// <returns>The same environment</returns>
         public static FEnvironment FEndWord(FEnvironment e)
         {
-            return new FEnvironment(e.DataStack, e.WordDict, e.Input, FMode.Halt);
+            return new FEnvironment(e.DataStack, e.WordDict, e.Input, FMode.Halt, e.InputIndex);
         }
 
         /// <summary>
@@ -307,16 +310,15 @@ namespace Forcsh
         /// </summary>
         /// <param name="wordData">The word definition</param>
         /// <returns>Function that shifts environment to word definition</returns>
-        public static Func<FEnvironment, FEnvironment> WordWrapper(IEnumerable<String> wordData)
+        public static Func<FEnvironment, FEnvironment> WordWrapper(List<String> wordData)
         {
             return (FEnvironment e) =>
             {
-                var oldInput = e.Input;
-                var tempEnv = new FEnvironment(e.DataStack, e.WordDict, wordData, e.Mode);
+                var tempEnv = new FEnvironment(e.DataStack, e.WordDict, wordData, e.Mode, 0);
                 
                 var resultEnv = RunInterpreter(tempEnv, () => null);
 
-                return new FEnvironment(resultEnv.DataStack, resultEnv.WordDict, oldInput, FMode.Eval);
+                return new FEnvironment(resultEnv.DataStack, resultEnv.WordDict, e.Input, FMode.Eval, e.InputIndex);
             };
         }
 
@@ -330,11 +332,11 @@ namespace Forcsh
         /// <returns>New environment</returns>
         public static FEnvironment FWord(FEnvironment e)
         {
-            var wordName = e.Input.First();
-            var wordData = e.Input.Skip(1);
+            var wordName = e.Input[e.InputIndex];
+            var wordData = e.Input.Skip(2).ToList();
             e.WordDict[wordName] = WordWrapper(wordData);
 
-            return new FEnvironment(e.DataStack, e.WordDict, new string[] { }, e.Mode);
+            return new FEnvironment(e.DataStack, e.WordDict, new List<String>(), e.Mode, e.InputIndex);
         }
 
         /// <summary>
@@ -398,7 +400,7 @@ namespace Forcsh
         {
             var (t, v) = token;
             if (t == FType.FNull)
-                return new FEnvironment(e.DataStack, e.WordDict, null, FMode.Halt);
+                return new FEnvironment(e.DataStack, e.WordDict, null, FMode.Halt, e.InputIndex);
             
             if (t == FType.FWord)
             {
@@ -407,7 +409,7 @@ namespace Forcsh
             else
             {
                 e.DataStack.Push((t, v));
-                return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode);
+                return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex);
             }
         }
 
@@ -420,21 +422,21 @@ namespace Forcsh
         /// <param name="readLine">Function to grab a new line from a stream</param>
         /// <param name="wordDict">The Forsch word dictionary</param>
         /// <returns></returns>
-        public static ((FType, String) token, IEnumerable<string> tail) Read(IEnumerable<string> input,  Func<string> readLine, FWordDict wordDict)
+        public static ((FType, String) token, List<string> input, int newIndex) Read(List<string> input, int inputIndex,  Func<string> readLine, FWordDict wordDict)
         {
-            if (!input.Any())
+            if (inputIndex >= input.Count())
             {
                 var nextLine = readLine();
                 if (nextLine == null)
-                    return ((FType.FNull, null), input);
+                    return ((FType.FNull, null), input, 0);
                 else if (nextLine.Trim() == "")
-                    return Read(input, readLine, wordDict);
+                    return Read(input, 0 , readLine, wordDict);
                 else
-                    return Read(nextLine.Trim().Split(), readLine, wordDict);
+                    return Read(new List<string>(nextLine.Trim().Split()), 0, readLine, wordDict);
             }
             else
             {
-                return (Tokenize(input.First(), wordDict), input.Skip(1));
+                return (Tokenize(input[inputIndex], wordDict), input, inputIndex + 1);
             }
         }
 
@@ -450,21 +452,19 @@ namespace Forcsh
         {
             while (e.Mode != FMode.Halt)
             {
-                var (token, input) = Read(e.Input, Console.ReadLine, e.WordDict);
-                e = new FEnvironment(e.DataStack, e.WordDict, input, e.Mode);
+                var (token, input, newIndex) = Read(e.Input, e.InputIndex, Console.ReadLine, e.WordDict);
+                e = new FEnvironment(e.DataStack, e.WordDict, input, e.Mode, newIndex);
                 e = Eval(e, token);
             }
 
             return e;
         }
-
-        /// <summary>
-        /// Spins up a new Forsch interpreter on standard input
+        /// <summary> /// Spins up a new Forsch interpreter on standard input
         /// </summary>
         /// <param name="args"></param>
         public static void Main(string[] args)
         {
-            var e = new FEnvironment(DataStack, WordDict, new List<string>(), FMode.Eval);
+            var e = new FEnvironment(DataStack, WordDict, new List<string>(), FMode.Eval, 0);
             RunInterpreter(e, Console.ReadLine);
         }
     }
