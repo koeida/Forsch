@@ -29,3 +29,10 @@ Some example code pulled from the test runner:
 
     ( Branch word successfully jumps over the correct number of words )
     50 False BRANCHF 2 10 20 20 = ASSERT 50 = ASSERT
+
+Todo:
+
+    * Proper conditionals using compilation like a normal forth
+    * Reorganize code into reasonable modules (at least separate out all those builtin words)
+    * Write some library code that preloads on boot.
+    * Make it do something cute with graphics. Like, is there a way to pipe the output to the python turtle? Yeah there is, lol.
