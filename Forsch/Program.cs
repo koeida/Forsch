@@ -340,7 +340,7 @@ namespace Forsch
         {
             var (_,s) = e.DataStack.Pop();
             var (_,i) = e.DataStack.Pop();
-            e.Input.Insert(Convert.ToInt32(i), s);
+            e.Input[Convert.ToInt16(i)] = s;
             return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex);
         }
         
