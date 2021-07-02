@@ -168,18 +168,42 @@ namespace Forcsh
             var (xt, xv) = s.Pop();
             var (yt, yv) = s.Pop();
             if (xt != yt)
-                throw new Exception($"Unable to compare equality of ({xt},{xv}) and ({yt}, {yv})");
+                throw new Exception($"Unable to add ({xt},{xv}) and ({yt}, {yv}): Mismatched types");
 
             var res = "";
             if (xt == FType.FInt)
                 res = (System.Convert.ToInt32(xv) + System.Convert.ToInt32(yv)).ToString();
             else if (xt == FType.FFloat)
                 res = $"{System.Convert.ToSingle(xv) + System.Convert.ToSingle(yv):0.0000}";
-            else if (new FType[] {FType.FStr, FType.FWord, FType.FBool}.Contains(xt))
-                res = (xv == yv).ToString();
+            else if (xt == FType.FStr)
+                res = xv + yv;
+            else
+                throw new Exception($"Unable to add value of type {xt}");
             s.Push((xt, res));
             
             return new FEnvironment(s, WordDict, e.Input, e.Mode);
+        }
+
+        public static FEnvironment FMult(FEnvironment e)
+        {   
+            var s = e.DataStack;
+            var (xt, xv) = s.Pop();
+            var (yt, yv) = s.Pop();
+            if (xt != yt)
+                throw new Exception($"Unable to multiple ({xt},{xv}) and ({yt}, {yv}): Type mismatch");
+
+            var res = "";
+            if (xt == FType.FInt)
+                res = (System.Convert.ToInt32(xv) * System.Convert.ToInt32(yv)).ToString();
+            else if (xt == FType.FFloat)
+                res = $"{System.Convert.ToSingle(xv) * System.Convert.ToSingle(yv):0.0000}";
+            else
+                throw new Exception(($"Can't multiply value of type {xt}"));
+                
+            s.Push((xt, res));
+            
+            return new FEnvironment(s, WordDict, e.Input, e.Mode);
+            
         }
 
         /// <summary>
@@ -239,7 +263,7 @@ namespace Forcsh
             var s = e
                 .DataStack
                 .Reverse()
-                .Aggregate("", (a, x) => a + " " + x.Item2)
+                .Aggregate("", (a, x) => a + $" ({x.Item1},{x.Item2})")
                 .Trim();
                 
             Console.Out.WriteLine(s);
@@ -260,19 +284,17 @@ namespace Forcsh
             if (bt == FType.FBool && bv == "True")
                 return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode);
             else
-                throw new Exception("FAssert Failed");
+                throw new Exception("Assert Failed");
         }
 
         /// <summary>
-        /// Doesn't do anything. Only included because traditionally
-        /// you put a ; at the end of a new word definition,
-        /// but in this implementation I don't actually need ; to do anything.
+        /// Changes the mode to halt
         /// </summary>
         /// <param name="e">Current environment</param>
         /// <returns>The same environment</returns>
-        public static FEnvironment FSike(FEnvironment e)
+        public static FEnvironment FEndWord(FEnvironment e)
         {
-            return e;
+            return new FEnvironment(e.DataStack, e.WordDict, e.Input, FMode.Halt);
         }
 
         /// <summary>
@@ -294,7 +316,7 @@ namespace Forcsh
                 
                 var resultEnv = RunInterpreter(tempEnv, () => null);
 
-                return new FEnvironment(resultEnv.DataStack, resultEnv.WordDict, oldInput, resultEnv.Mode);
+                return new FEnvironment(resultEnv.DataStack, resultEnv.WordDict, oldInput, FMode.Eval);
             };
         }
 
@@ -321,10 +343,11 @@ namespace Forcsh
         public static FWordDict WordDict = new FWordDict
         {
             ["+"] = FAdd,
+            ["*"] = FMult,
             ["."] = FDot,
             ["="] = FEq,
             [":"] = FWord,
-            [";"] = FSike,
+            [";"] = FEndWord,
             ["DUP"] = FDup,
             ["DROP"] = FDrop,
             ["ASSERT"] = FAssert,
@@ -386,20 +409,6 @@ namespace Forcsh
                 e.DataStack.Push((t, v));
                 return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode);
             }
-        }
-
-        /// <summary>
-        /// Reads a word from input and converts it to a token
-        /// </summary>
-        /// <param name="input">The current list of untokenized strings</param>
-        /// <param name="wordDict">The word dictionary</param>
-        /// <returns>A Forsch token</returns>
-        public static (IEnumerable<string> tail, (FType, string) token) TokenizeHead(IEnumerable<string> input, FWordDict wordDict)
-        {
-            var head = input.First();
-            var tail = input.Skip(1);
-            var token = Tokenize(head, wordDict);
-            return (tail, token);
         }
 
         /// <summary>
