@@ -344,6 +344,20 @@ namespace Forsch
             return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex);
         }
         
+
+        /// <summary>
+        /// Pops the top of the stack and inserts it
+        /// into e.Input at e.InputIndex.
+        /// </summary>
+        /// <param name="e">Current environment</param>
+        /// <returns>New environment</returns>
+        public static FEnvironment FDictInsert(FEnvironment e)
+        {
+            var (_, s) = e.DataStack.Pop();
+            e.Input.Insert(e.InputIndex, s);
+            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex);
+        }
+        
         /// <summary>
         /// Takes a dictionary of keys to locate, and replaces them with corresponding
         /// values in string s.
@@ -428,6 +442,7 @@ namespace Forsch
             ["EMPTY?"] = FIsEmpty,
             ["HERE"] = FHere,
             ["!"] = FStore,
+            [","] = FDictInsert,
             ["("] = FComment,
         };
         
