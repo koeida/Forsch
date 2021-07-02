@@ -1,7 +1,6 @@
-﻿using System;
-using NUnit.Framework;
+﻿using NUnit.Framework;
 
-namespace ForschTests
+namespace ForcshTests
 {
     [TestFixture]
     public class Tests
@@ -10,7 +9,7 @@ namespace ForschTests
         public void CompileTests()
         {
             var preCompiled = "BLAH BLAH BEGIN 1 + DUP 10 = UNTIL";
-            //Assert.AreEqual("BLAH BLAH BEGIN 1 + DUP 10 = BRANCHF 2");
+            //Assert.AreEqual("BLAH BLAH BEGIN 1 + DUP 10 = BRANCHF 2", Forsch.
         }
     }
 }
