@@ -5,9 +5,10 @@
 1.1 8.9 + 10.0 = ASSERT
 
 ( Exercising all the builtin words )
-1 2 SWAP 1 = ASSERT
+1 2 SWAP 1 = ASSERT 2 = ASSERT
 1 2 DROP 1 = ASSERT
 1 Testing_dot_word_please_ignore_me . 1 = ASSERT
+Testing_survey_word_please_ignore_me SURVEY Testing_survey_word_please_ignore_me = ASSERT ( Make sure survey doesn't affect stack )
 
 ( Defining new words )
 : DOUBLE DUP + ;

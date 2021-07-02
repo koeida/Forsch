@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
+using System.Security.Permissions;
 
 namespace Forcsh
 {
@@ -20,6 +20,7 @@ namespace Forcsh
         FFloat,
         FInt,
         FWord,
+        FNull,
         FBool
     }
     
@@ -124,7 +125,13 @@ namespace Forcsh
             return new FEnvironment(s, WordDict, e.Input, e.Mode);
         }
 
-        
+        /// <summary>
+        /// Pops top two words off the stack and adds them together in a type-appropriate way.
+        /// Pushes result on to stack.
+        /// </summary>
+        /// <param name="e">Current environment</param>
+        /// <returns>New environment</returns>
+        /// <exception cref="Exception">Throws exception if types don't match</exception>
         public static FEnvironment FAdd(FEnvironment e)
         {
             var s = e.DataStack;
@@ -145,12 +152,27 @@ namespace Forcsh
             return new FEnvironment(s, WordDict, e.Input, e.Mode);
         }
 
+        /// <summary>
+        /// A quirky word.
+        /// The stack has to look like this: boolean BRANCHF int
+        /// Pops the boolean (b) off the stack and reads the following int (i)
+        /// If b is false, jump e.Input ahead i words past i.
+        /// Otherwise, return an environment with the input starting after the int
+        /// </summary>
+        /// <param name="e">Current environment</param>
+        /// <returns>New environment</returns>
+        /// <exception cref="Exception">Throws exception if no boolean on the stack or if no integer following</exception>
         public static FEnvironment FBranchOnFalse(FEnvironment e)
         {
-            var offset = Convert.ToInt32(e.Input.First());
+            if (!int.TryParse(e.Input.First(), out var offset))
+                throw new Exception("Attempted to branch with no branch offset");
+            
             var tail = e.Input.Skip(1);
             var (bt, bv) = e.DataStack.Pop();
-            if (bt == FType.FBool && bv == "False")
+            if (bt != FType.FBool)
+                throw new Exception("Attempted to branch with non-boolean value");
+            
+            if (bv == "False")
             {
                 var newInput = tail.Skip(offset - 1);
                 return new FEnvironment(e.DataStack, e.WordDict, newInput, e.Mode);
@@ -161,6 +183,12 @@ namespace Forcsh
             }
         }
 
+        /// <summary>
+        /// Reads ahead in e.Input until it finds a closing parens,
+        /// ignoring everything it finds.
+        /// </summary>
+        /// <param name="e">Current environment</param>
+        /// <returns>New environment</returns>
         public static FEnvironment FComment(FEnvironment e)
         {
             var tail = e.Input
@@ -169,9 +197,13 @@ namespace Forcsh
             return new FEnvironment(e.DataStack, e.WordDict, tail, e.Mode);
         }
 
-        // "Surveys" the contents of the stack.
-        // That is, it outputs the whole stack:
-        // left is the bottommost, right is the topmost
+        /// <summary>
+        /// "Surveys" the contents of the stack.
+        /// That is, it outputs the whole stack:
+        /// left is the bottommost, right is the topmost
+        /// </summary>
+        /// <param name="e">Current environment</param>
+        /// <returns>The same, unchanged environment</returns>
         public static FEnvironment FSurvey(FEnvironment e)
         {
             var s = e
@@ -184,37 +216,66 @@ namespace Forcsh
             return e;
         }
 
+        /// <summary>
+        /// Pops the top of the stack.
+        /// If it's False, throw an exception.
+        /// If it's True, 
+        /// </summary>
+        /// <param name="e">Current environment</param>
+        /// <returns>New environment</returns>
+        /// <exception cref="Exception">Throws exception if top of stack is False (or not a boolean)</exception>
         public static FEnvironment FAssert(FEnvironment e)
         {
             var (bt, bv) = e.DataStack.Pop();
             if (bt == FType.FBool && bv == "True")
-                return e;
+                return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode);
             else
                 throw new Exception("FAssert Failed");
         }
 
+        /// <summary>
+        /// Doesn't do anything. Only included because traditionally
+        /// you put a ; at the end of a new word definition,
+        /// but in this implementation I don't actually need ; to do anything.
+        /// </summary>
+        /// <param name="e">Current environment</param>
+        /// <returns>The same environment</returns>
         public static FEnvironment FSike(FEnvironment e)
         {
             return e;
         }
 
+        /// <summary>
+        /// Takes the definition of a word (name excluded) and wraps it in a function
+        /// that:
+        /// * Takes the current environment,
+        /// * Assigns wordData (the word definition) to e.Input,
+        /// * Runs a read/eval loop on that definition until it finishes,
+        /// * Then returns control to the calling context/input.
+        /// </summary>
+        /// <param name="wordData">The word definition</param>
+        /// <returns>Function that shifts environment to word definition</returns>
         public static Func<FEnvironment, FEnvironment> WordWrapper(IEnumerable<String> wordData)
         {
             return (FEnvironment e) =>
             {
                 var oldInput = e.Input;
                 var tempEnv = new FEnvironment(e.DataStack, e.WordDict, wordData, e.Mode);
-                while (true)
-                {
-                    if (tempEnv.Input.Count() == 0)
-                        break;
-                    tempEnv = Eval(tempEnv);
-                }
+                
+                var resultEnv = RunInterpreter(tempEnv, () => null);
 
-                return new FEnvironment(tempEnv.DataStack, tempEnv.WordDict, oldInput, tempEnv.Mode);
+                return new FEnvironment(resultEnv.DataStack, resultEnv.WordDict, oldInput, resultEnv.Mode);
             };
         }
 
+        /// <summary>
+        /// Creates a new word.
+        /// 
+        /// Reads in the rest of e.Input, wraps it with WordWrapper, and places it in
+        /// e.WordDict. 
+        /// </summary>
+        /// <param name="e">Current environment</param>
+        /// <returns>New environment</returns>
         public static FEnvironment FWord(FEnvironment e)
         {
             var wordName = e.Input.First();
@@ -224,6 +285,9 @@ namespace Forcsh
             return new FEnvironment(e.DataStack, e.WordDict, new string[] { }, e.Mode);
         }
 
+        /// <summary>
+        /// Built-in words.
+        /// </summary>
         public static FWordDict WordDict = new FWordDict
         {
             ["+"] = FAdd,
@@ -240,6 +304,17 @@ namespace Forcsh
             ["("] = FComment,
         };
         
+        /// <summary>
+        /// Reads a string s and converts it into a (FType, value) token,
+        /// which is the only type allowed on the stack.
+        ///
+        /// The values always stay as strings, but Tokenize is intended to reliably
+        /// attach FType values to them indicating whether the string can be coerced into
+        /// a value of the intended type.
+        /// </summary>
+        /// <param name="s">The string to tokenize</param>
+        /// <param name="wordDict">The word dictionary</param>
+        /// <returns>A new (Ftype, String) tuple</returns>
         public static (FType, String) Tokenize(string s, FWordDict wordDict)
         {
             if (wordDict.ContainsKey(s))
@@ -261,54 +336,70 @@ namespace Forcsh
             }
         }
         
-        public static FEnvironment Eval(FEnvironment e)
+        /// <summary>
+        /// Tokenizes the 
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        public static FEnvironment Eval(FEnvironment e, (FType, String) token)
         {
-            if (e.Mode == FMode.Halt)
-                return e;
+            var (t, v) = token;
+            if (t == FType.FNull)
+                return new FEnvironment(e.DataStack, e.WordDict, null, FMode.Halt);
             
-            var (tail, (t, v)) = TokenizeHead(e);
             if (t == FType.FWord)
             {
-                return e.WordDict[v](new FEnvironment(e.DataStack, e.WordDict, tail, e.Mode));
+                return e.WordDict[v](e);
             }
             else
             {
                 e.DataStack.Push((t, v));
-                return new FEnvironment(e.DataStack, e.WordDict, tail, e.Mode);
+                return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode);
             }
         }
 
-        public static (IEnumerable<string> tail, (FType, string) token) TokenizeHead(FEnvironment e)
+        public static (IEnumerable<string> tail, (FType, string) token) TokenizeHead(IEnumerable<string> input, FWordDict wordDict)
         {
-            var head = e.Input.First();
-            var tail = e.Input.Skip(1);
-            var token = Tokenize(head, e.WordDict);
+            var head = input.First();
+            var tail = input.Skip(1);
+            var token = Tokenize(head, wordDict);
             return (tail, token);
         }
 
-        public static FEnvironment Read(FEnvironment e,  Func<string> readLine)
+        public static ((FType, String) token, IEnumerable<string> tail) Read(IEnumerable<string> input,  Func<string> readLine, FWordDict wordDict)
         {
-            if (!e.Input.Any())
+            if (!input.Any())
             {
-                var nextLine = Console.ReadLine();
+                var nextLine = readLine();
                 if (nextLine == null)
-                    return new FEnvironment(e.DataStack, e.WordDict, e.Input, FMode.Halt);
+                    return ((FType.FNull, null), input);
                 else if (nextLine.Trim() == "")
-                    return Read(e, readLine);
+                    return Read(input, readLine, wordDict);
                 else
-                    return new FEnvironment(e.DataStack, e.WordDict, nextLine.Split(), e.Mode);
+                    return Read(nextLine.Trim().Split(), readLine, wordDict);
             }
             else
             {
-                return e;
+                return (Tokenize(input.First(), wordDict), input.Skip(1));
             }
+        }
+
+        public static FEnvironment RunInterpreter(FEnvironment e, Func<string> readLine)
+        {
+            while (e.Mode != FMode.Halt)
+            {
+                var (token, input) = Read(e.Input, Console.ReadLine, e.WordDict);
+                e = new FEnvironment(e.DataStack, e.WordDict, input, e.Mode);
+                e = Eval(e, token);
+            }
+
+            return e;
         }
 
         public static void Main(string[] args)
         {
             var e = new FEnvironment(DataStack, WordDict, new List<string>(), FMode.Eval);
-            while (e.Mode != FMode.Halt)
-                e = Eval(Read(e, Console.ReadLine));
+            RunInterpreter(e, Console.ReadLine);
         }
     }
 }
