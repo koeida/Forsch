@@ -25,9 +25,9 @@ Testing_survey_word_please_ignore_me SURVEY Testing_survey_word_please_ignore_me
 4 QUAD 16 = ASSERT
 
 
-( Branch word successfully jumps over the correct number of words )
-BRANCH 2 100 200 200 = ASSERT EMPTY? ASSERT
-False BRANCHF 2 100 200 200 = ASSERT SURVEY EMPTY? ASSERT
+( Branch word successfully jumps to the correct index )
+BRANCH 3 100 200 200 = ASSERT EMPTY? ASSERT
+False BRANCHF 4 100 200 200 = ASSERT SURVEY EMPTY? ASSERT
 
 ( Comments have no effect on the stack )
 10 ( velim monstrare me sine difficultate posse commentare ) 10 = ASSERT

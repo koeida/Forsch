@@ -1,8 +1,10 @@
 ﻿using System;
+using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Permissions;
+using System.Text;
 
 namespace Forcsh
 {
@@ -215,7 +217,7 @@ namespace Forcsh
             
         }
 
-        public static int ReadOffset(List<string> input, int curIndex)
+        public static int ReadIntParam(List<string> input, int curIndex)
         {
             if (!int.TryParse(input[curIndex], out var offset))
                 throw new Exception("Attempted to branch with no branch offset");
@@ -226,7 +228,7 @@ namespace Forcsh
         /// A quirky word.
         /// The stack has to look like this: boolean BRANCHF int
         /// Pops the boolean (b) off the stack and reads the following int (i)
-        /// If b is false, jump e.Input ahead i words past i.
+        /// If b is false, shift e.CurIndex to i
         /// Otherwise, return an environment with the input starting after the int
         /// </summary>
         /// <param name="e">Current environment</param>
@@ -234,26 +236,26 @@ namespace Forcsh
         /// <exception cref="Exception">Throws exception if no boolean on the stack or if no integer following</exception>
         public static FEnvironment FBranchOnFalse(FEnvironment e)
         {
-            var offset = ReadOffset(e.Input, e.InputIndex);
+            var newIndex = ReadIntParam(e.Input, e.InputIndex);
             var (bt, bv) = e.DataStack.Pop();
             if (bt != FType.FBool)
                 throw new Exception("Attempted to branch with non-boolean value");
 
             if (bv == "False")
-                return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex + offset);
+                return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, newIndex);
             else
                 return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex);
         }
 
         /// <summary>
-        /// Shifts the input index by a relative amount indicated by the next word in the input 
+        /// Shifts the input index to the  indicated by the next word in the input 
         /// </summary>
         /// <param name="e">Current environment</param>
         /// <returns>New Environment</returns>
         public static FEnvironment FBranch(FEnvironment e)
         {  
-            var offset = ReadOffset(e.Input, e.InputIndex);
-            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex + offset);
+            var offset = ReadIntParam(e.Input, e.InputIndex);
+            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, offset);
         }
 
         /// <summary>
@@ -315,6 +317,30 @@ namespace Forcsh
             var isEmpty = !e.DataStack.Any();
             e.DataStack.Push((FType.FBool, isEmpty.ToString()));
             return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex);
+        }
+
+        public static void Compile(string line)
+        {
+            // First, expand special words that take numeric offsets with placeholders
+            var expansions = new Dictionary<String, String>
+            {
+                ["UNTIL"] = "UNTIL 0",
+            };
+            var expandedLine = new StringBuilder(line);
+            foreach (var keyValue in expansions)
+               expandedLine.Replace(keyValue.Key, keyValue.Value);
+            
+            // Then fill in placeholders with actual offsets 
+            var words = expandedLine.ToString().Split();
+            for (var i = 0; i < words.Length; i++)
+            {
+                
+            }
+            
+            
+            
+            
+                
         }
 
         /// <summary>
