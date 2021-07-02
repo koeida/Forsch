@@ -8,6 +8,7 @@
 ( Exercising builtin words )
 EMPTY? True = ASSERT 
 HERE HERE HERE 2 = ASSERT 1 = ASSERT 0 = ASSERT
+Look_at_this_string!__Actually,_don't...I'm_just_testing_the_quote_word(") " .
 1 2 SWAP 1 = ASSERT 2 = ASSERT
 1 2 DROP 1 = ASSERT
 true true = ASSERT

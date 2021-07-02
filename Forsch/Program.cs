@@ -348,13 +348,39 @@ namespace Forsch
         /// <summary>
         /// Pops the top of the stack and inserts it
         /// into e.Input at e.InputIndex.
+        ///
+        /// If the token is multi-word (judging by whitespace)
+        /// the string is inserted as separate words
         /// </summary>
         /// <param name="e">Current environment</param>
         /// <returns>New environment</returns>
         public static FEnvironment FDictInsert(FEnvironment e)
         {
             var (_, s) = e.DataStack.Pop();
-            e.Input.Insert(e.InputIndex, s);
+            if (s.Contains(" "))
+            {
+                var words = s.Split();
+                e.Input.InsertRange(e.InputIndex, words);
+            }
+            else
+                e.Input.Insert(e.InputIndex, s);
+            
+            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex);
+        }
+
+        /// <summary>
+        /// Pops a word off the stack, replaces the underscores in it, and pushes it back
+        /// in, replacing spaces with underscores.
+        /// The lazy way to have strings with whitespace strings. Very nonstandard, but
+        /// this is my little baby Forth.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        public static FEnvironment FToString(FEnvironment e)
+        {
+            var (_, s) = e.DataStack.Pop();
+            var result = s.Replace("_", " ");
+            e.DataStack.Push((FType.FStr, result));
             return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex);
         }
         
@@ -443,6 +469,7 @@ namespace Forsch
             ["HERE"] = FHere,
             ["!"] = FStore,
             [","] = FDictInsert,
+            ["\""] = FToString,
             ["("] = FComment,
         };
         
