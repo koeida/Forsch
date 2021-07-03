@@ -40,6 +40,7 @@ namespace Forsch
             ["\""] = new Word(FToString, false),
             ["("] = new Word(FComment, false),
         };
+
         /// <summary>
         /// Duplicates the top element of the stack 
         /// </summary>
@@ -329,7 +330,7 @@ namespace Forsch
         {
             return new FEnvironment(e.DataStack, e.WordDict, e.Input, FMode.Execute, e.InputIndex, e.CurWord, e.CurWordDef);
         }
-        
+
 
         /// <summary>
         /// Pops the top of the stack and appends it
@@ -371,7 +372,7 @@ namespace Forsch
             e.DataStack.Push((FType.FStr, result));
             return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
         }
-        
+
         /// <summary>
         /// Changes the mode to halt and adds the completed word to the dictionary.
         /// </summary>
@@ -382,7 +383,7 @@ namespace Forsch
             e.WordDict[e.CurWord] = new Word(WordWrapper(e.CurWordDef), false);
             return new FEnvironment(e.DataStack, e.WordDict, e.Input, FMode.Halt, e.InputIndex, null, null);
         }
-        
+
         /// <summary>
         /// Creates a new word.
         /// 
@@ -417,6 +418,5 @@ namespace Forsch
             //Return back to normal execution context with our new word added to the word dictionary
             return new FEnvironment(newEnv.DataStack, newEnv.WordDict, new List<string>(), e.Mode, 0, null, null);
         }
-        
     }
 }

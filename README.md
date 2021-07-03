@@ -35,6 +35,6 @@ Some example code pulled from the test runner:
 
 Todo:
 
-    * Reorganize code into reasonable modules (at least separate out all those builtin words)
-    * Write some library code that preloads on boot.
+    * Looping constructs
     * Make it do something cute with graphics. Like, is there a way to pipe the output to the python turtle? Yeah there is, lol.
+    * Either get record syntax working or get rid of all those pointless calls to the environment constructor
