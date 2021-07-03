@@ -6,8 +6,24 @@ using System.Text;
 namespace Forsch
 {
     using FStack = Stack<(FType, String)>;
-    using FWordDict = Dictionary<string, (Func<FEnvironment, FEnvironment> wordFunc, bool isImmediate)>;
-    
+    using FWordDict = Dictionary<string, Word>;
+
+    /// <summary>
+    /// Internal representation of a word:
+    /// a reference to a function that modifies the environment and
+    /// a flag indicating whether the word is run in immediate mode.
+    /// </summary>
+    public class Word
+    {
+        public Func<FEnvironment, FEnvironment> WordFunc;
+        public bool IsImmediate;
+
+        public Word(Func<FEnvironment, FEnvironment> wordFunc, bool isImmediate)
+        {
+            WordFunc = wordFunc;
+            IsImmediate = isImmediate;
+        }
+    }
     /// <summary>
     /// Represents the different modes of the Forsch interpreter.
     /// Halt indicates that the environment should halt its read/eval loop.
@@ -431,7 +447,7 @@ namespace Forsch
         /// <returns>The same environment</returns>
         public static FEnvironment FEndWord(FEnvironment e)
         {
-            e.WordDict[e.CurWord] = (WordWrapper(e.CurWordDef), false);
+            e.WordDict[e.CurWord] = new Word(WordWrapper(e.CurWordDef), false);
             return new FEnvironment(e.DataStack, e.WordDict, e.Input, FMode.Halt, e.InputIndex, null, null);
         }
 
@@ -486,7 +502,8 @@ namespace Forsch
             var newEnv = RunInterpreter(
                 new FEnvironment(e.DataStack, e.WordDict, wordData, FMode.Compile, e.InputIndex, wordName, new List<string>()),
                 () => null);
-            
+
+            newEnv.WordDict[wordName].IsImmediate = immediateMode;
             //Return back to normal execution context with our new word added to the word dictionary
             return new FEnvironment(newEnv.DataStack, newEnv.WordDict, new List<string>(), e.Mode, 0, null, null);
         }
@@ -499,27 +516,27 @@ namespace Forsch
         /// </summary>
         public static FWordDict WordDict = new FWordDict
         {
-            ["+"] = (FAdd, false),
-            ["*"] = (FMult, false),
-            ["."] = (FDot, false),
-            ["="] = (FEq, false),
-            [":"] = (FWord, false),
-            [";"] = (FEndWord, true),
-            ["["] = (FForceCompile, true),
-            ["]"] = (FForceExecute, true),
-            ["DUP"] = (FDup, false),
-            ["DROP"] = (FDrop, false),
-            ["ASSERT"] = (FAssert, false),
-            ["SWAP"] = (FSwap, false),
-            ["BRANCH"] = (FBranch, false),
-            ["BRANCH?"] = (FBranchOnFalse, false),
-            ["SURVEY"] = (FSurvey, false),
-            ["EMPTY?"] = (FIsEmpty, false),
-            ["HERE"] = (FHere, false),
-            ["!"] = (FStore, false),
-            [","] = (FDictInsert, false),
-            ["\""] = (FToString, false),
-            ["("] = (FComment, false),
+            ["+"] = new Word(FAdd, false),
+            ["*"] = new Word(FMult, false),
+            ["."] = new Word(FDot, false),
+            ["="] = new Word(FEq, false),
+            [":"] = new Word(FWord, false),
+            [";"] = new Word(FEndWord, true),
+            ["["] = new Word(FForceCompile, true),
+            ["]"] = new Word(FForceExecute, true),
+            ["DUP"] = new Word(FDup, false),
+            ["DROP"] = new Word(FDrop, false),
+            ["ASSERT"] = new Word(FAssert, false),
+            ["SWAP"] = new Word(FSwap, false),
+            ["BRANCH"] = new Word(FBranch, false),
+            ["BRANCH?"] = new Word(FBranchOnFalse, false),
+            ["SURVEY"] = new Word(FSurvey, false),
+            ["EMPTY?"] = new Word(FIsEmpty, false),
+            ["HERE"] = new Word(FHere, false),
+            ["!"] = new Word(FStore, false),
+            [","] = new Word(FDictInsert, false),
+            ["\""] = new Word(FToString, false),
+            ["("] = new Word(FComment, false),
         };
         
         /// <summary>
@@ -570,8 +587,8 @@ namespace Forsch
             // Immediate words are immediately executed even though we're in compile mode.
             if (e.Mode == FMode.Compile)
             {
-                if (t == FType.FWord && e.WordDict[v].isImmediate)
-                    return e.WordDict[v].wordFunc(e);
+                if (t == FType.FWord && e.WordDict[v].IsImmediate)
+                    return e.WordDict[v].WordFunc(e);
                 else
                 {
                     e.CurWordDef.Add(v);
@@ -584,8 +601,7 @@ namespace Forsch
                 // If it's a word, execute it. If it's not a word, push it onto the stack.
                 if (t == FType.FWord)
                 {
-                    var (wordFunction, _) = e.WordDict[v];
-                    return wordFunction(e);
+                    return e.WordDict[v].WordFunc(e);
                 }
                 else
                 {
