@@ -32,6 +32,7 @@ namespace Forsch
             ["SWAP"] = new Word(FSwap, false),
             ["OVER"] = new Word(FOver, false),
             ["ROT"] = new Word(FRot, false),
+            ["PICK"] = new Word(FPick, false),
             ["BRANCH"] = new Word(FBranch, false),
             ["BRANCH?"] = new Word(FBranchOnFalse, false),
             ["SURVEY"] = new Word(FSurvey, false),
@@ -101,6 +102,22 @@ namespace Forsch
             e.DataStack.Push(n3);
             e.DataStack.Push(n1);
             
+            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
+        }
+
+        /// <summary>
+        /// Pops a number n off the stack
+        /// and copies the nth element of the stack to the top
+        /// of the stack.
+        /// </summary>
+        /// <param name="e">Current environment</param>
+        /// <returns>New environment</returns>
+        public static FEnvironment FPick(FEnvironment e)
+        {
+            var (_, nstr) = e.DataStack.Pop();
+            var n = Convert.ToInt16(nstr);
+            var nth = e.DataStack.Skip(n).First();
+            e.DataStack.Push(nth);
             return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
         }
 
@@ -291,7 +308,7 @@ namespace Forsch
             if (bt == FType.FBool && bv == "True")
                 return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
             else
-                throw new Exception("Assert Failed");
+                throw new Exception("Assert Failed on line: \n" + String.Join(" ", e.Input));
         }
 
         /// <summary>

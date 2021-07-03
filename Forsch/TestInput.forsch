@@ -9,6 +9,7 @@
 EMPTY? True = ASSERT 
 Look_at_this_string!__Actually,_don't...I'm_just_testing_the_quote_word(") " .
 1 2 SWAP 1 = ASSERT 2 = ASSERT
+a b c d e 4 PICK a = ASSERT DROP DROP DROP DROP DROP
 1 2 DROP 1 = ASSERT
 1 2 OVER 1 = ASSERT 2 = ASSERT 1 = ASSERT
 1 2 3 ROT 1 = ASSERT 3 = ASSERT 2 = ASSERT
