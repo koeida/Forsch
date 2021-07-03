@@ -352,6 +352,26 @@ namespace Forsch
             e.Input[Convert.ToInt16(i)] = s;
             return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
         }
+
+        /// <summary>
+        /// Switches to compile mode
+        /// </summary>
+        /// <param name="e">Current environment</param>
+        /// <returns>New environment</returns>
+        public static FEnvironment FForceCompile(FEnvironment e)
+        {
+            return new FEnvironment(e.DataStack, e.WordDict, e.Input, FMode.Compile, e.InputIndex, e.CurWord, e.CurWordDef);
+        }
+
+        /// <summary>
+        /// Switches to execute mode
+        /// </summary>
+        /// <param name="e">Current environment</param>
+        /// <returns>New environment</returns>
+        public static FEnvironment FForceExecute(FEnvironment e)
+        {
+            return new FEnvironment(e.DataStack, e.WordDict, e.Input, FMode.Execute, e.InputIndex, e.CurWord, e.CurWordDef);
+        }
         
 
         /// <summary>
@@ -393,20 +413,6 @@ namespace Forsch
             return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
         }
         
-        /// <summary>
-        /// Takes a dictionary of keys to locate, and replaces them with corresponding
-        /// values in string s.
-        /// </summary>
-        /// <param name="s">String to run search/replace on</param>
-        /// <returns>New converted string</returns>
-        public static String DictionaryReplace(Dictionary<String, String> replacementDict, string s)
-        {
-            var expandedLine = new StringBuilder(s);
-            foreach (var keyValue in replacementDict)
-                expandedLine.Replace(keyValue.Key, keyValue.Value);
-            return expandedLine.ToString();
-        }
-
         /// <summary>
         /// Changes the mode to halt and adds the completed word to the dictionary.
         /// </summary>
@@ -488,12 +494,14 @@ namespace Forsch
             ["="] = (FEq, false),
             [":"] = (FWord, false),
             [";"] = (FEndWord, true),
+            ["["] = (FForceCompile, false),
+            ["]"] = (FForceExecute, true),
             ["DUP"] = (FDup, false),
             ["DROP"] = (FDrop, false),
             ["ASSERT"] = (FAssert, false),
             ["SWAP"] = (FSwap, false),
             ["BRANCH"] = (FBranch, false),
-            ["BRANCHF"] = (FBranchOnFalse, false),
+            ["BRANCH?"] = (FBranchOnFalse, false),
             ["SURVEY"] = (FSurvey, false),
             ["EMPTY?"] = (FIsEmpty, false),
             ["HERE"] = (FHere, false),
