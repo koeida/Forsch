@@ -30,6 +30,7 @@ namespace Forsch
             ["DROP"] = new Word(FDrop, false),
             ["ASSERT"] = new Word(FAssert, false),
             ["SWAP"] = new Word(FSwap, false),
+            ["OVER"] = new Word(FOver, false),
             ["BRANCH"] = new Word(FBranch, false),
             ["BRANCH?"] = new Word(FBranchOnFalse, false),
             ["SURVEY"] = new Word(FSurvey, false),
@@ -66,6 +67,22 @@ namespace Forsch
             s.Push(top);
             s.Push(second);
             return new FEnvironment(s, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
+        }
+
+        /// <summary>
+        /// Copies second item of stack to top of stack.
+        /// ( n1 n2 -- n1 n2 n1 )
+        /// </summary>
+        /// <param name="e">Current environment</param>
+        /// <returns>New environment</returns>
+        public static FEnvironment FOver(FEnvironment e)
+        {
+            var n2 = e.DataStack.Pop();
+            var n1 = e.DataStack.Pop();
+            e.DataStack.Push(n1);
+            e.DataStack.Push(n2);
+            e.DataStack.Push(n1);
+            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
         }
 
         /// <summary>
@@ -137,9 +154,9 @@ namespace Forsch
 
             var res = xt switch
             {
-                FType.FInt => (System.Convert.ToInt32(xv) + System.Convert.ToInt32(yv)).ToString(),
-                FType.FFloat => $"{System.Convert.ToSingle(xv) + System.Convert.ToSingle(yv):0.0000}",
-                FType.FStr => xv + yv,
+                FType.FInt => (System.Convert.ToInt32(yv) + System.Convert.ToInt32(xv)).ToString(),
+                FType.FFloat => $"{System.Convert.ToSingle(yv) + System.Convert.ToSingle(xv):0.0000}",
+                FType.FStr => yv + xv,
                 _ => throw new Exception($"Unable to add value of type {xt}")
             };
             s.Push((xt, res));

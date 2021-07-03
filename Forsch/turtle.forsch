@@ -1,0 +1,14 @@
+( Wiring forsch into python's turtle graphics for funzies )
+: INIT from_turtle_import_* " . ;
+: CALLF1 " SWAP " + ) " + ;
+: FD forward( CALLF1 . ;
+: RT right( CALLF1 . ;
+INIT
+100 FD
+90 RT
+100 FD
+90 RT
+100 FD
+90 RT
+100 FD
+done() .
