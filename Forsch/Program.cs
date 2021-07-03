@@ -354,13 +354,24 @@ namespace Forsch
         }
 
         /// <summary>
-        /// Switches to compile mode
+        /// If we're in compile mode, jump ahead to closing brace ] and
+        /// append entire block, braces included, to CurWordDef
+        ///
+        /// If we're in execute mode, switch to compile mode.
         /// </summary>
         /// <param name="e">Current environment</param>
         /// <returns>New environment</returns>
         public static FEnvironment FForceCompile(FEnvironment e)
         {
-            return new FEnvironment(e.DataStack, e.WordDict, e.Input, FMode.Compile, e.InputIndex, e.CurWord, e.CurWordDef);
+            if (e.Mode == FMode.Compile)
+            {
+                var jumpIndex = e.Input.IndexOf("]");
+                var block = e.Input.GetRange(e.InputIndex - 1, (jumpIndex - e.InputIndex) + 2);
+                var newWordDef = e.CurWordDef.Concat(block).ToList(); 
+                return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, jumpIndex + 1, e.CurWord, newWordDef);
+            }
+            else
+                return new FEnvironment(e.DataStack, e.WordDict, e.Input, FMode.Compile, e.InputIndex, e.CurWord, e.CurWordDef);
         }
 
         /// <summary>
@@ -460,7 +471,7 @@ namespace Forsch
             int wordDataSkip; bool immediateMode;
             if (e.Input[e.InputIndex + 1] == "IMMEDIATE")
             {
-                wordDataSkip = 3;
+                wordDataSkip = 2;
                 immediateMode = true;
             }
             else
@@ -494,7 +505,7 @@ namespace Forsch
             ["="] = (FEq, false),
             [":"] = (FWord, false),
             [";"] = (FEndWord, true),
-            ["["] = (FForceCompile, false),
+            ["["] = (FForceCompile, true),
             ["]"] = (FForceExecute, true),
             ["DUP"] = (FDup, false),
             ["DROP"] = (FDrop, false),
@@ -552,7 +563,7 @@ namespace Forsch
         {
             var (t, v) = token;
             if (t == FType.FNull)
-                return new FEnvironment(e.DataStack, e.WordDict, null, FMode.Halt, e.InputIndex, e.CurWord, e.CurWordDef);
+                return new FEnvironment(e.DataStack, e.WordDict, new List<string>(), FMode.Halt, e.InputIndex, e.CurWord, e.CurWordDef);
 
             // In compile mode, words are just appended onto CurWordDef one at a time
             // unless they're immediate words.
@@ -639,7 +650,17 @@ namespace Forsch
         /// <param name="args"></param>
         public static void Main(string[] args)
         {
-            var e = new FEnvironment(DataStack, WordDict, new List<string>(), FMode.Execute, 0, null, new List<string>());
+            var initialEnvironment = new FEnvironment(DataStack, WordDict, new List<string>(), FMode.Execute, 0, null, new List<string>());
+            
+            // Load up core premade words that didn't have to get written in C#
+            var predefinedWordFile = new System.IO.StreamReader(@"PredefinedWords.forsch");
+            var preloadedEnvironment = RunInterpreter(initialEnvironment, predefinedWordFile.ReadLine);
+            predefinedWordFile.Close();
+
+            //We desperately need record syntax here ugh.
+            var e = new FEnvironment(preloadedEnvironment.DataStack, preloadedEnvironment.WordDict,
+                preloadedEnvironment.Input, FMode.Execute, preloadedEnvironment.InputIndex,
+                preloadedEnvironment.CurWord, preloadedEnvironment.CurWordDef);
             RunInterpreter(e, Console.ReadLine);
         }
     }
