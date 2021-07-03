@@ -27,12 +27,14 @@ Some example code pulled from the test runner:
     : QUAD DOUBLE DOUBLE ;
     4 QUAD 16 = ASSERT
 
-    ( Branch word successfully jumps over the correct number of words )
-    50 False BRANCHF 2 10 20 20 = ASSERT 50 = ASSERT
+    ( Conditional Logic )
+    : BISCUIT_TEST START_VAL 10 10 = IF BISCUITS THEN BISCUITS = ASSERT START_VAL = ASSERT ; 
+    : BISCUIT 10 8 = IF BISCUITS THEN EMPTY? ASSERT ; 
+    BISCUIT_TEST
+    BISCUIT_TEST2
 
 Todo:
 
-    * Proper conditionals using compilation like a normal forth
     * Reorganize code into reasonable modules (at least separate out all those builtin words)
     * Write some library code that preloads on boot.
     * Make it do something cute with graphics. Like, is there a way to pipe the output to the python turtle? Yeah there is, lol.
