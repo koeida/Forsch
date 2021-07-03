@@ -20,12 +20,14 @@ namespace Forsch
         {
             ["+"] = new Word(FAdd, false),
             ["*"] = new Word(FMult, false),
+            ["/"] = new Word(FDiv, false),
             ["."] = new Word(FDot, false),
             ["="] = new Word(FEq, false),
             [":"] = new Word(FWord, false),
             [";"] = new Word(FEndWord, true),
             ["["] = new Word(FForceCompile, false),
             ["]"] = new Word(FForceExecute, false),
+            ["RAND"] = new Word(FRandInt,false),
             ["DUP"] = new Word(FDup, false),
             ["DROP"] = new Word(FDrop, false),
             ["ASSERT"] = new Word(FAssert, false),
@@ -174,6 +176,27 @@ namespace Forsch
         }
 
         /// <summary>
+        /// Pops the top two numbers (min max) off the stack and
+        /// pushes a random integer within min max back onto the stack
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        public static FEnvironment FRandInt(FEnvironment e)
+        {
+            var s = e.DataStack;
+            var (xt, xv) = s.Pop();
+            var (yt, yv) = s.Pop();
+            if (!(xt == yt && xt == FType.FInt))
+                throw new Exception($"Type error: Unable to generate a random integer with ({xt},{xv}) and ({yt}, {yv})");
+            
+            var rval = new Random().Next(Convert.ToInt16(yv), Convert.ToInt16(xv));
+            Console.Out.WriteLine(rval);
+            e.DataStack.Push((FType.FInt, rval.ToString()));
+            
+            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
+        }
+
+        /// <summary>
         /// Pops top two words off the stack and adds them together in a type-appropriate way.
         /// Pushes result on to stack.
         /// </summary>
@@ -206,7 +229,7 @@ namespace Forsch
             var (xt, xv) = s.Pop();
             var (yt, yv) = s.Pop();
             if (xt != yt)
-                throw new Exception($"Unable to multiple ({xt},{xv}) and ({yt}, {yv}): Type mismatch");
+                throw new Exception($"Unable to multiply ({xt},{xv}) and ({yt}, {yv}): Type mismatch");
 
             var res = xt switch
             {
@@ -219,6 +242,32 @@ namespace Forsch
             
             return new FEnvironment(s, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
             
+        }
+        
+        /// <summary>
+        /// Divides top two words of stack and pushes result
+        /// </summary>
+        /// <param name="e"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
+        public static FEnvironment FDiv(FEnvironment e)
+        {   
+            var s = e.DataStack;
+            var (xt, xv) = s.Pop();
+            var (yt, yv) = s.Pop();
+            if (xt != yt)
+                throw new Exception($"Unable to divide ({xt},{xv}) and ({yt}, {yv}): Type mismatch");
+
+            var res = xt switch
+            {
+                FType.FInt => (System.Convert.ToInt32(yv) / System.Convert.ToInt32(xv)).ToString(),
+                FType.FFloat => $"{System.Convert.ToSingle(yv) / System.Convert.ToSingle(xv):0.0000}",
+                _ => throw new Exception(($"Can't multiply value of type {xt}"))
+            };
+
+            s.Push((xt, res));
+            
+            return new FEnvironment(s, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
         }
 
         public static int ReadIntParam(List<string> input, int curIndex)

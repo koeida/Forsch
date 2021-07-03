@@ -4,6 +4,8 @@
 1.1 8.9 + 10.0 = ASSERT
 2 10 * 20 = ASSERT
 1.25 2.0 * 2.5 = ASSERT
+10 2 / 5 = ASSERT
+10.0 3.0 / 3.333333 = ASSERT
 
 ( Exercising builtin words )
 EMPTY? True = ASSERT 

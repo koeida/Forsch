@@ -9,6 +9,7 @@
 ( n1 n2 -- n1 n2 n1 n2 )
 : 2DUP OVER OVER ;
 a b 2DUP b = ASSERT a = ASSERT b = ASSERT a = ASSERT
+: 3RD 2 PICK ;
 
 ( Looping )
 : BEGIN IMMEDIATE HERE ;
