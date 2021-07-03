@@ -11,6 +11,7 @@ Look_at_this_string!__Actually,_don't...I'm_just_testing_the_quote_word(") " .
 1 2 SWAP 1 = ASSERT 2 = ASSERT
 1 2 DROP 1 = ASSERT
 1 2 OVER 1 = ASSERT 2 = ASSERT 1 = ASSERT
+1 2 3 ROT 1 = ASSERT 3 = ASSERT 2 = ASSERT
 true true = ASSERT
 foo foo = ASSERT
 1 Testing_dot_word_please_ignore_me . 1 = ASSERT

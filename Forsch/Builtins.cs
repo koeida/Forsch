@@ -31,6 +31,7 @@ namespace Forsch
             ["ASSERT"] = new Word(FAssert, false),
             ["SWAP"] = new Word(FSwap, false),
             ["OVER"] = new Word(FOver, false),
+            ["ROT"] = new Word(FRot, false),
             ["BRANCH"] = new Word(FBranch, false),
             ["BRANCH?"] = new Word(FBranchOnFalse, false),
             ["SURVEY"] = new Word(FSurvey, false),
@@ -82,6 +83,24 @@ namespace Forsch
             e.DataStack.Push(n1);
             e.DataStack.Push(n2);
             e.DataStack.Push(n1);
+            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
+        }
+
+        /// <summary>
+        /// Brings third element of stack to front
+        /// (n1 n2 n3 -- n2 n3 n1)
+        /// </summary>
+        /// <param name="e">Current environment</param>
+        /// <returns>New environment</returns>
+        public static FEnvironment FRot(FEnvironment e)
+        {
+            var n3 = e.DataStack.Pop();
+            var n2 = e.DataStack.Pop();
+            var n1 = e.DataStack.Pop();
+            e.DataStack.Push(n2);
+            e.DataStack.Push(n3);
+            e.DataStack.Push(n1);
+            
             return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
         }
 
