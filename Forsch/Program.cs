@@ -267,9 +267,9 @@ namespace Forsch
                 throw new Exception("Attempted to branch with non-boolean value");
 
             if (bv == "False")
-                return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, newIndex, e.CurWord, e.CurWordDef);
+                return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, newIndex + 1, e.CurWord, e.CurWordDef);
             else
-                return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
+                return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex + 1, e.CurWord, e.CurWordDef);
         }
 
         /// <summary>
@@ -351,13 +351,13 @@ namespace Forsch
         /// <returns>New environment</returns>
         public static FEnvironment FHere(FEnvironment e)
         {
-            e.DataStack.Push((FType.FInt, (e.InputIndex - 1).ToString()));
+            e.DataStack.Push((FType.FInt, (e.CurWordDef.Count() - 1).ToString()));
             return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
         }
 
         /// <summary>
         /// Pops a string and an index off the stack
-        /// and then inserts that string into e.Input at that index.
+        /// and then inserts that string into e.CurWordDef at that index.
         /// </summary>
         /// <param name="e">Current environment</param>
         /// <returns>New environment</returns>
@@ -365,33 +365,38 @@ namespace Forsch
         {
             var (_,s) = e.DataStack.Pop();
             var (_,i) = e.DataStack.Pop();
-            e.Input[Convert.ToInt16(i)] = s;
+            e.CurWordDef[Convert.ToInt16(i)] = s;
             return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
         }
 
         /// <summary>
-        /// If we're in compile mode, jump ahead to closing brace ] and
-        /// append entire block, braces included, to CurWordDef
-        ///
-        /// If we're in execute mode, switch to compile mode.
+        /// Grabs the input up to the closing brace and appends it to CurWordDef
         /// </summary>
         /// <param name="e">Current environment</param>
         /// <returns>New environment</returns>
         public static FEnvironment FForceCompile(FEnvironment e)
         {
-            if (e.Mode == FMode.Compile)
+            var closingBraceIndex = -1;
+            for(var x = e.InputIndex; x < e.Input.Count(); x++)
             {
-                var jumpIndex = e.Input.IndexOf("]");
-                var block = e.Input.GetRange(e.InputIndex - 1, (jumpIndex - e.InputIndex) + 2);
-                var newWordDef = e.CurWordDef.Concat(block).ToList(); 
-                return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, jumpIndex + 1, e.CurWord, newWordDef);
+                if (e.Input[x] == "]")
+                {
+                    closingBraceIndex = x;
+                    break;
+                }
             }
-            else
-                return new FEnvironment(e.DataStack, e.WordDict, e.Input, FMode.Compile, e.InputIndex, e.CurWord, e.CurWordDef);
+
+            if (closingBraceIndex == -1)
+                throw new Exception("Parsing error: no closing brace ]");
+
+            var newWordDef = e.CurWordDef.Concat(e.Input.GetRange(e.InputIndex, closingBraceIndex - 1)).ToList();
+            
+            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, closingBraceIndex + 1, e.CurWord, newWordDef);
         }
 
         /// <summary>
-        /// Switches to execute mode
+        /// In compile mode, appends itself to CurWordDef
+        /// In execute mode, Switches to compile mode
         /// </summary>
         /// <param name="e">Current environment</param>
         /// <returns>New environment</returns>
@@ -402,8 +407,8 @@ namespace Forsch
         
 
         /// <summary>
-        /// Pops the top of the stack and inserts it
-        /// into e.Input at e.InputIndex.
+        /// Pops the top of the stack and appends it
+        /// to the current word
         ///
         /// If the token is multi-word (judging by whitespace)
         /// the string is inserted as separate words
@@ -416,12 +421,14 @@ namespace Forsch
             if (s.Contains(" "))
             {
                 var words = s.Split();
-                e.Input.InsertRange(e.InputIndex, words);
+                var newWordDef = e.CurWordDef.Concat(words).ToList();
+                return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, newWordDef);
             }
             else
-                e.Input.Insert(e.InputIndex, s);
-            
-            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
+            {
+                var newWordDef = new List<string>(e.CurWordDef) {s};
+                return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, newWordDef);
+            }
         }
 
         /// <summary>
@@ -469,7 +476,7 @@ namespace Forsch
                 
                 var resultEnv = RunInterpreter(tempEnv, () => null);
 
-                return new FEnvironment(resultEnv.DataStack, resultEnv.WordDict, e.Input, FMode.Execute, e.InputIndex, e.CurWord, e.CurWordDef);
+                return new FEnvironment(resultEnv.DataStack, resultEnv.WordDict, e.Input, FMode.Execute, e.InputIndex, e.CurWord, resultEnv.CurWordDef);
             };
         }
 
@@ -522,8 +529,8 @@ namespace Forsch
             ["="] = new Word(FEq, false),
             [":"] = new Word(FWord, false),
             [";"] = new Word(FEndWord, true),
-            ["["] = new Word(FForceCompile, true),
-            ["]"] = new Word(FForceExecute, true),
+            ["["] = new Word(FForceCompile, false),
+            ["]"] = new Word(FForceExecute, false),
             ["DUP"] = new Word(FDup, false),
             ["DROP"] = new Word(FDrop, false),
             ["ASSERT"] = new Word(FAssert, false),
@@ -588,7 +595,14 @@ namespace Forsch
             if (e.Mode == FMode.Compile)
             {
                 if (t == FType.FWord && e.WordDict[v].IsImmediate)
-                    return e.WordDict[v].WordFunc(e);
+                {
+                    //Extremely verbose way of switching a single boolean. Change this.
+                    var immediateEnvironment = new FEnvironment(e.DataStack, e.WordDict, e.Input, FMode.Execute,
+                        e.InputIndex, e.CurWord, e.CurWordDef);
+                    var result = e.WordDict[v].WordFunc(immediateEnvironment);
+                    return new FEnvironment(result.DataStack, result.WordDict, result.Input, FMode.Compile,
+                        result.InputIndex, result.CurWord, result.CurWordDef);
+                }
                 else
                 {
                     e.CurWordDef.Add(v);
@@ -675,8 +689,7 @@ namespace Forsch
 
             //We desperately need record syntax here ugh.
             var e = new FEnvironment(preloadedEnvironment.DataStack, preloadedEnvironment.WordDict,
-                preloadedEnvironment.Input, FMode.Execute, preloadedEnvironment.InputIndex,
-                preloadedEnvironment.CurWord, preloadedEnvironment.CurWordDef);
+                new List<string>(), FMode.Execute, 0, null, null);
             RunInterpreter(e, Console.ReadLine);
         }
     }

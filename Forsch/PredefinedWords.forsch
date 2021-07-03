@@ -1,2 +1,3 @@
-: IF IMMEDIATE HERE [ BRANCH? ] , ;
+: - -1 * + ; 
+: IF IMMEDIATE [ BRANCH? 0 ] HERE ;
 : THEN IMMEDIATE HERE ! ;

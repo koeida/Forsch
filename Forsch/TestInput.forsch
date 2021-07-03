@@ -7,7 +7,6 @@
 
 ( Exercising builtin words )
 EMPTY? True = ASSERT 
-HERE HERE HERE 2 = ASSERT 1 = ASSERT 0 = ASSERT
 Look_at_this_string!__Actually,_don't...I'm_just_testing_the_quote_word(") " .
 1 2 SWAP 1 = ASSERT 2 = ASSERT
 1 2 DROP 1 = ASSERT
@@ -19,7 +18,6 @@ Testing_survey_word_please_ignore_me SURVEY Testing_survey_word_please_ignore_me
 ( Defining new words )
 : DOUBLE DUP + ;
 5 DOUBLE 10 = ASSERT
-: - -1 * + ; ( Being cute and defining a new operator )
 10 2 - 8 = ASSERT
 
 ( Defining new words that use other new words )
@@ -28,5 +26,11 @@ Testing_survey_word_please_ignore_me SURVEY Testing_survey_word_please_ignore_me
 
 ( Comments have no effect on the stack )
 10 ( velim monstrare me sine difficultate posse commentare ) 10 = ASSERT
+
+( Conditional Logic )
+: BISCUIT_TEST START_VAL 10 10 = IF BISCUITS THEN BISCUITS = ASSERT START_VAL = ASSERT ; 
+: BISCUIT 10 8 = IF BISCUITS THEN EMPTY? ASSERT ; 
+BISCUIT_TEST
+BISCUIT_TEST2
 
 😍😍😍_ALL_FORSCH_TESTS_PASS_😍😍😍 .
