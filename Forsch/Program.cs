@@ -1,26 +1,24 @@
 ﻿using System;
-using System.CodeDom.Compiler;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Security.Permissions;
 using System.Text;
 
 namespace Forsch
 {
     using FStack = Stack<(FType, String)>;
-    using FWordDict = Dictionary<string, (Func<FEnvironment, FEnvironment>, bool)>;
+    using FWordDict = Dictionary<string, (Func<FEnvironment, FEnvironment> wordFunc, bool isImmediate)>;
     
     /// <summary>
-    /// Represents the different modes of the Forsch interpreter. Usually Forths switch between
-    /// immediate mode and compile mode, but this one works a little different.
-    /// Halt indicates that the environment should stop interpreting.
-    /// Eval indicates that the environment should continue interpreting.
+    /// Represents the different modes of the Forsch interpreter.
+    /// Halt indicates that the environment should halt its read/eval loop.
+    /// Execute indicates that the environment should continue immediately interpreting each new word.
+    /// Compile indicates the the environment should compile each new word instead of immediately executing it.
     /// </summary>
     public enum FMode
     {
         Halt,
-        Eval
+        Execute,
+        Compile
     };
     
     /// <summary>
@@ -58,10 +56,22 @@ namespace Forsch
         /// The dictionary containing all premade words, along with any user-defined words added at runtime.
         /// </summary>
         public FWordDict WordDict { get; }
+        
+        /// <summary>
+        /// Reference to the definition of current word being compiled
+        /// </summary>
+        public List<String> CurWordDef { get; }
+
+        /// <summary>
+        /// Name of current word being compiled
+        /// </summary>
+        public String CurWord { get; }
+        
         /// <summary>
         /// The list of words to be evaluated.
         /// </summary>
         public List<String> Input { get; }
+        
         /// <summary>
         /// The current mode, as described in the enum above.
         /// </summary>
@@ -72,13 +82,16 @@ namespace Forsch
         /// </summary>
         public int InputIndex { get; }
         
-        public FEnvironment(FStack dataStack, FWordDict wordDict, List<string> input, FMode mode, int inputIndex)
+        public FEnvironment(FStack dataStack, FWordDict wordDict, List<string> input, 
+            FMode mode, int inputIndex, string curWord, List<string> curWordDef)
         {
             DataStack = dataStack;
             WordDict = wordDict;
             Input = input;
             InputIndex = inputIndex;
             Mode = mode;
+            CurWordDef = curWordDef;
+            CurWord = curWord;
         }
     }
 
@@ -95,7 +108,7 @@ namespace Forsch
         {
             var s = e.DataStack;
             s.Push(DataStack.Peek());
-            return new FEnvironment(s, WordDict, e.Input, e.Mode, e.InputIndex);
+            return new FEnvironment(s, WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
         }
 
         /// <summary>
@@ -110,7 +123,7 @@ namespace Forsch
             var second = s.Pop();
             s.Push(top);
             s.Push(second);
-            return new FEnvironment(s, WordDict, e.Input, e.Mode, e.InputIndex);
+            return new FEnvironment(s, WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
         }
 
         /// <summary>
@@ -122,7 +135,7 @@ namespace Forsch
         {
             var s = e.DataStack;
             s.Pop();
-            return new FEnvironment(s, WordDict, e.Input, e.Mode, e.InputIndex);
+            return new FEnvironment(s, WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
         }
 
         /// <summary>
@@ -135,7 +148,7 @@ namespace Forsch
             var s = e.DataStack;
             var (t, v) = s.Pop();
             System.Console.WriteLine(v);
-            return new FEnvironment(s, WordDict, e.Input, e.Mode, e.InputIndex);
+            return new FEnvironment(s, WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
         }
 
         /// <summary>
@@ -153,17 +166,16 @@ namespace Forsch
             if (xt != yt)
                 throw new Exception($"Unable to compare equality of ({xt},{xv}) and ({yt}, {yv})");
 
-            var res = false;
-            if (xt == FType.FInt)
-                res = System.Convert.ToInt32(xv) == System.Convert.ToInt32(yv);
-            else if (xt == FType.FFloat)
-                res = Math.Abs(System.Convert.ToSingle(xv) - System.Convert.ToSingle(yv)) < 0.0001;
-            else if (new FType[] {FType.FStr, FType.FWord, FType.FBool}.Contains(xt) )
-                res = xv == yv;
+            var res = xt switch
+            {
+                FType.FInt => System.Convert.ToInt32(xv) == System.Convert.ToInt32(yv),
+                FType.FFloat => Math.Abs(System.Convert.ToSingle(xv) - System.Convert.ToSingle(yv)) < 0.0001,
+                _ => xv == yv
+            };
             
             s.Push((FType.FBool, res.ToString()));
 
-            return new FEnvironment(s, WordDict, e.Input, e.Mode, e.InputIndex);
+            return new FEnvironment(s, WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
         }
 
         /// <summary>
@@ -181,18 +193,16 @@ namespace Forsch
             if (xt != yt)
                 throw new Exception($"Unable to add ({xt},{xv}) and ({yt}, {yv}): Mismatched types");
 
-            var res = "";
-            if (xt == FType.FInt)
-                res = (System.Convert.ToInt32(xv) + System.Convert.ToInt32(yv)).ToString();
-            else if (xt == FType.FFloat)
-                res = $"{System.Convert.ToSingle(xv) + System.Convert.ToSingle(yv):0.0000}";
-            else if (xt == FType.FStr)
-                res = xv + yv;
-            else
-                throw new Exception($"Unable to add value of type {xt}");
+            var res = xt switch
+            {
+                FType.FInt => (System.Convert.ToInt32(xv) + System.Convert.ToInt32(yv)).ToString(),
+                FType.FFloat => $"{System.Convert.ToSingle(xv) + System.Convert.ToSingle(yv):0.0000}",
+                FType.FStr => xv + yv,
+                _ => throw new Exception($"Unable to add value of type {xt}")
+            };
             s.Push((xt, res));
             
-            return new FEnvironment(s, WordDict, e.Input, e.Mode, e.InputIndex);
+            return new FEnvironment(s, WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
         }
 
         public static FEnvironment FMult(FEnvironment e)
@@ -203,17 +213,16 @@ namespace Forsch
             if (xt != yt)
                 throw new Exception($"Unable to multiple ({xt},{xv}) and ({yt}, {yv}): Type mismatch");
 
-            var res = "";
-            if (xt == FType.FInt)
-                res = (System.Convert.ToInt32(xv) * System.Convert.ToInt32(yv)).ToString();
-            else if (xt == FType.FFloat)
-                res = $"{System.Convert.ToSingle(xv) * System.Convert.ToSingle(yv):0.0000}";
-            else
-                throw new Exception(($"Can't multiply value of type {xt}"));
-                
+            var res = xt switch
+            {
+                FType.FInt => (System.Convert.ToInt32(xv) * System.Convert.ToInt32(yv)).ToString(),
+                FType.FFloat => $"{System.Convert.ToSingle(xv) * System.Convert.ToSingle(yv):0.0000}",
+                _ => throw new Exception(($"Can't multiply value of type {xt}"))
+            };
+
             s.Push((xt, res));
             
-            return new FEnvironment(s, WordDict, e.Input, e.Mode, e.InputIndex);
+            return new FEnvironment(s, WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
             
         }
 
@@ -242,9 +251,9 @@ namespace Forsch
                 throw new Exception("Attempted to branch with non-boolean value");
 
             if (bv == "False")
-                return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, newIndex);
+                return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, newIndex, e.CurWord, e.CurWordDef);
             else
-                return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex);
+                return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
         }
 
         /// <summary>
@@ -255,7 +264,7 @@ namespace Forsch
         public static FEnvironment FBranch(FEnvironment e)
         {  
             var offset = ReadIntParam(e.Input, e.InputIndex);
-            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, offset);
+            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, offset, e.CurWord, e.CurWordDef);
         }
 
         /// <summary>
@@ -268,7 +277,7 @@ namespace Forsch
         {
             var newIndex = e.Input.IndexOf(")");
 
-            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, newIndex + 1);
+            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, newIndex + 1, e.CurWord, e.CurWordDef);
         }
 
         /// <summary>
@@ -302,7 +311,7 @@ namespace Forsch
         {
             var (bt, bv) = e.DataStack.Pop();
             if (bt == FType.FBool && bv == "True")
-                return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex);
+                return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
             else
                 throw new Exception("Assert Failed");
         }
@@ -316,7 +325,7 @@ namespace Forsch
         {
             var isEmpty = !e.DataStack.Any();
             e.DataStack.Push((FType.FBool, isEmpty.ToString()));
-            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex);
+            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
         }
 
         /// <summary>
@@ -327,7 +336,7 @@ namespace Forsch
         public static FEnvironment FHere(FEnvironment e)
         {
             e.DataStack.Push((FType.FInt, (e.InputIndex - 1).ToString()));
-            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex);
+            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
         }
 
         /// <summary>
@@ -341,7 +350,7 @@ namespace Forsch
             var (_,s) = e.DataStack.Pop();
             var (_,i) = e.DataStack.Pop();
             e.Input[Convert.ToInt16(i)] = s;
-            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex);
+            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
         }
         
 
@@ -365,7 +374,7 @@ namespace Forsch
             else
                 e.Input.Insert(e.InputIndex, s);
             
-            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex);
+            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
         }
 
         /// <summary>
@@ -381,7 +390,7 @@ namespace Forsch
             var (_, s) = e.DataStack.Pop();
             var result = s.Replace("_", " ");
             e.DataStack.Push((FType.FStr, result));
-            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex);
+            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
         }
         
         /// <summary>
@@ -399,13 +408,14 @@ namespace Forsch
         }
 
         /// <summary>
-        /// Changes the mode to halt
+        /// Changes the mode to halt and adds the completed word to the dictionary.
         /// </summary>
         /// <param name="e">Current environment</param>
         /// <returns>The same environment</returns>
         public static FEnvironment FEndWord(FEnvironment e)
         {
-            return new FEnvironment(e.DataStack, e.WordDict, e.Input, FMode.Halt, e.InputIndex);
+            e.WordDict[e.CurWord] = (WordWrapper(e.CurWordDef), false);
+            return new FEnvironment(e.DataStack, e.WordDict, e.Input, FMode.Halt, e.InputIndex, null, null);
         }
 
         /// <summary>
@@ -422,11 +432,11 @@ namespace Forsch
         {
             return (FEnvironment e) =>
             {
-                var tempEnv = new FEnvironment(e.DataStack, e.WordDict, wordData, e.Mode, 0);
+                var tempEnv = new FEnvironment(e.DataStack, e.WordDict, wordData, e.Mode, 0, e.CurWord, e.CurWordDef);
                 
                 var resultEnv = RunInterpreter(tempEnv, () => null);
 
-                return new FEnvironment(resultEnv.DataStack, resultEnv.WordDict, e.Input, FMode.Eval, e.InputIndex);
+                return new FEnvironment(resultEnv.DataStack, resultEnv.WordDict, e.Input, FMode.Execute, e.InputIndex, e.CurWord, e.CurWordDef);
             };
         }
 
@@ -449,13 +459,19 @@ namespace Forsch
             }
             else
             {
-                wordDataSkip = 2;
+                wordDataSkip = 1;
                 immediateMode = false;
             }
+            
             var wordData = e.Input.Skip(wordDataSkip).ToList();
-            e.WordDict[wordName] = (WordWrapper(wordData), immediateMode);
-
-            return new FEnvironment(e.DataStack, e.WordDict, new List<String>(), e.Mode, e.InputIndex);
+            
+            //Spin off a new interpreter in compile mode pointed at this fresh word data
+            var newEnv = RunInterpreter(
+                new FEnvironment(e.DataStack, e.WordDict, wordData, FMode.Compile, e.InputIndex, wordName, new List<string>()),
+                () => null);
+            
+            //Return back to normal execution context with our new word added to the word dictionary
+            return new FEnvironment(newEnv.DataStack, newEnv.WordDict, new List<string>(), e.Mode, 0, null, null);
         }
 
         /// <summary>
@@ -471,7 +487,7 @@ namespace Forsch
             ["."] = (FDot, false),
             ["="] = (FEq, false),
             [":"] = (FWord, false),
-            [";"] = (FEndWord, false),
+            [";"] = (FEndWord, true),
             ["DUP"] = (FDup, false),
             ["DROP"] = (FDrop, false),
             ["ASSERT"] = (FAssert, false),
@@ -528,17 +544,39 @@ namespace Forsch
         {
             var (t, v) = token;
             if (t == FType.FNull)
-                return new FEnvironment(e.DataStack, e.WordDict, null, FMode.Halt, e.InputIndex);
-            
-            if (t == FType.FWord)
+                return new FEnvironment(e.DataStack, e.WordDict, null, FMode.Halt, e.InputIndex, e.CurWord, e.CurWordDef);
+
+            // In compile mode, words are just appended onto CurWordDef one at a time
+            // unless they're immediate words.
+            // Immediate words are immediately executed even though we're in compile mode.
+            if (e.Mode == FMode.Compile)
             {
-                var (wordFunction, immediateMode) = e.WordDict[v];
-                return wordFunction(e);
+                if (t == FType.FWord && e.WordDict[v].isImmediate)
+                    return e.WordDict[v].wordFunc(e);
+                else
+                {
+                    e.CurWordDef.Add(v);
+                    return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord,
+                        e.CurWordDef);
+                }
+            }
+            else if (e.Mode == FMode.Execute)
+            {
+                // If it's a word, execute it. If it's not a word, push it onto the stack.
+                if (t == FType.FWord)
+                {
+                    var (wordFunction, _) = e.WordDict[v];
+                    return wordFunction(e);
+                }
+                else
+                {
+                    e.DataStack.Push((t, v));
+                    return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
+                }
             }
             else
             {
-                e.DataStack.Push((t, v));
-                return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex);
+                throw new Exception("Mode error: Somehow we're in eval but neither executing nor compiling.");
             }
         }
 
@@ -581,8 +619,8 @@ namespace Forsch
         {
             while (e.Mode != FMode.Halt)
             {
-                var (token, input, newIndex) = Read(e.Input, e.InputIndex, Console.ReadLine, e.WordDict);
-                e = new FEnvironment(e.DataStack, e.WordDict, input, e.Mode, newIndex);
+                var (token, input, newIndex) = Read(e.Input, e.InputIndex, readLine, e.WordDict);
+                e = new FEnvironment(e.DataStack, e.WordDict, input, e.Mode, newIndex, e.CurWord, e.CurWordDef);
                 e = Eval(e, token);
             }
 
@@ -593,7 +631,7 @@ namespace Forsch
         /// <param name="args"></param>
         public static void Main(string[] args)
         {
-            var e = new FEnvironment(DataStack, WordDict, new List<string>(), FMode.Eval, 0);
+            var e = new FEnvironment(DataStack, WordDict, new List<string>(), FMode.Execute, 0, null, new List<string>());
             RunInterpreter(e, Console.ReadLine);
         }
     }
