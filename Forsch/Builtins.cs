@@ -190,7 +190,6 @@ namespace Forsch
                 throw new Exception($"Type error: Unable to generate a random integer with ({xt},{xv}) and ({yt}, {yv})");
             
             var rval = new Random().Next(Convert.ToInt16(yv), Convert.ToInt16(xv));
-            Console.Out.WriteLine(rval);
             e.DataStack.Push((FType.FInt, rval.ToString()));
             
             return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);

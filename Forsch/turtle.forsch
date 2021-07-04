@@ -1,11 +1,43 @@
 ( Wiring forsch into python's turtle graphics for funzies )
 
+( Helper functions for dealing with outputting to python )
 : INIT from_turtle_import_* " . ;
-: CALLF1 " SWAP " + ) " + ;
-: FD forward( CALLF1 . ;
-: RT right( CALLF1 . ;
-: COLOR1 color( CALLF1 . ;
-: SPEED speed( CALLF1 . ;
+: CALLF1 " SWAP " + ) " + . ;
+: CALLF2 " ROT " + ,_ " + SWAP " + ) " + . ;
+: CALLF3 " 3 PICK " + ,_ " + ROT " + ,_ " + SWAP " + ) " + . DROP ;
+: RELRAND DUP -1 * SWAP RAND ;
+
+( Basic turtle commands )
+: FD forward( CALLF1 ;
+: BK backward( CALLF1 ;
+: RT right( CALLF1 ;
+: TX xcor() ;
+: TY ycor() ;
+: POS TX TY ;
+: PENUP penup() . ;
+: PENDOWN pendown() . ;
+: PENSIZE pensize( CALLF1 ;
+: FACEUP seth(90) . ;
+: GOTO goto( CALLF2 ;
+: JUMP PENUP GOTO PENDOWN ;
+: DOT dot( CALLF1 ;
+: COLOR1 color( CALLF1 ;
+: COLOR3 color( CALLF3 ;
+: RANDGREY 50 255 RAND DUP DUP COLOR3 ;
+: SPEED speed( CALLF1 ;
+: RANDJUMP 500 RELRAND 500 RELRAND JUMP ;
+: HOME home() . ;
+: JUMPHOME PENUP home() . PENDOWN ;
+
+( Flower Words )
+: STEMSETUP 0 150 0 COLOR3 FACEUP DUP PENSIZE DUP 50 * 100 SWAP RAND ;
+: STEM STEMSETUP BEGIN 0.1 RT 1 FD 1 - DUP 0 = UNTIL DROP ;
+: SPECKLE 360 RELRAND RT 2 / RELRAND DUP FD 0 5 RAND DOT BK ;
+: DANDFLOWER 1 PENSIZE 0 BEGIN RANDGREY OVER 20 * SPECKLE 1 + DUP 500 = UNTIL DROP ;
+: DANDELION STEM DANDFLOWER ; 
+: FIELD 0 BEGIN JUMPHOME RANDJUMP 2 10 RAND DANDELION DROP 1 + DUP 100 = UNTIL DROP ;
+
+
 : SQ 0 BEGIN OVER FD 90 RT 1 + DUP 4 = UNTIL DROP DROP ;
 : SQUARE 0 BEGIN OVER FD 90 RT 25 SQ 1 + DUP 4 = UNTIL DROP DROP ;
 : RANDSQUARE 50 500 RAND SQUARE ;
@@ -13,10 +45,10 @@
 : DESCENDER 250 BEGIN 20 OVER SQUARECIRC 10 - DUP 0 = UNTIL DROP DROP ;
 
 INIT
-tracer(100,100) .
-'red' COLOR1
+colormode(255) .
+bgcolor(0,100,0) .
+tracer(500,500) .
 0 SPEED 
-10 DESCENDER 
+FIELD
 
-SURVEY
 done() .
