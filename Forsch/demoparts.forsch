@@ -1,0 +1,62 @@
+( Basic movement )
+INIT
+1 SPEED
+10 FD
+10 DOT
+25 FD
+15 DOT
+50 FD
+30 DOT
+100 FD
+60 DOT
+90 RT
+10 FD
+10 DOT
+25 FD
+15 DOT
+50 FD
+30 DOT
+100 FD
+60 DOT
+90 RT
+10 FD
+10 DOT
+25 FD
+15 DOT
+50 FD
+30 DOT
+100 FD
+60 DOT
+90 RT
+10 FD
+10 DOT
+25 FD
+15 DOT
+50 FD
+30 DOT
+100 FD
+60 DOT
+
+( First demo with words )
+INIT
+: DOTLINE 10 FD 10 DOT 25 FD 15 DOT 50 FD 30 DOT 100 FD 60 DOT 90 RT ;
+: DOTSQUARE DOTLINE DOTLINE DOTLINE DOTLINE ;
+: DOTSQUARELOOP 0 BEGIN DOTSQUARE 50 FD 45 RT 1 + DUP 8 = UNTIL ;
+0 SPEED
+DOTSQUARELOOP
+
+( Flowers Demo )
+INIT
+SPEED 0
+tracer(500,500) .
+colormode(255) .
+( stem  dandflower  dandelion  row  field )
+10 dandflower
+
+( Final field )
+INIT
+colormode(255) .
+bgcolor("green") .
+tracer(1500,1500) .
+0 SPEED 
+FIELD
