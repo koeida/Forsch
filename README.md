@@ -32,9 +32,3 @@ Some example code pulled from the test runner:
     : BISCUIT 10 8 = IF BISCUITS THEN EMPTY? ASSERT ; 
     BISCUIT_TEST
     BISCUIT_TEST2
-
-Todo:
-
-    * Looping constructs
-    * Make it do something cute with graphics. Like, is there a way to pipe the output to the python turtle? Yeah there is, lol.
-    * Either get record syntax working or get rid of all those pointless calls to the environment constructor
