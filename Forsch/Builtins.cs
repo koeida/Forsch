@@ -50,19 +50,18 @@ namespace Forsch
         /// Duplicates the top element of the stack 
         /// </summary>
         /// <param name="e">Current environment</param>
-        /// <returns>New environment</returns>
+        /// <returns>Modified environment</returns>
         public static FEnvironment FDup(FEnvironment e)
         {
-            var s = e.DataStack;
-            s.Push(e.DataStack.Peek());
-            return new FEnvironment(s, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
+            e.DataStack.Push(e.DataStack.Peek());
+            return e;
         }
 
         /// <summary>
         /// Swaps the top two elements of the stack. 
         /// </summary>
         /// <param name="e">Current environment</param>
-        /// <returns>New environment</returns>
+        /// <returns>Modified environment</returns>
         public static FEnvironment FSwap(FEnvironment e)
         {
             var s = e.DataStack;
@@ -70,7 +69,7 @@ namespace Forsch
             var second = s.Pop();
             s.Push(top);
             s.Push(second);
-            return new FEnvironment(s, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
+            return e;
         }
 
         /// <summary>
@@ -78,7 +77,7 @@ namespace Forsch
         /// ( n1 n2 -- n1 n2 n1 )
         /// </summary>
         /// <param name="e">Current environment</param>
-        /// <returns>New environment</returns>
+        /// <returns>Modified environment</returns>
         public static FEnvironment FOver(FEnvironment e)
         {
             var n2 = e.DataStack.Pop();
@@ -86,7 +85,7 @@ namespace Forsch
             e.DataStack.Push(n1);
             e.DataStack.Push(n2);
             e.DataStack.Push(n1);
-            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
+            return e;
         }
 
         /// <summary>
@@ -94,7 +93,7 @@ namespace Forsch
         /// (n1 n2 n3 -- n2 n3 n1)
         /// </summary>
         /// <param name="e">Current environment</param>
-        /// <returns>New environment</returns>
+        /// <returns>Modified environment</returns>
         public static FEnvironment FRot(FEnvironment e)
         {
             var n3 = e.DataStack.Pop();
@@ -103,8 +102,8 @@ namespace Forsch
             e.DataStack.Push(n2);
             e.DataStack.Push(n3);
             e.DataStack.Push(n1);
-            
-            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
+
+            return e;
         }
 
         /// <summary>
@@ -113,39 +112,37 @@ namespace Forsch
         /// of the stack.
         /// </summary>
         /// <param name="e">Current environment</param>
-        /// <returns>New environment</returns>
+        /// <returns>Modified environment</returns>
         public static FEnvironment FPick(FEnvironment e)
         {
             var (_, nstr) = e.DataStack.Pop();
             var n = Convert.ToInt16(nstr);
             var nth = e.DataStack.Skip(n).First();
             e.DataStack.Push(nth);
-            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
+            return e;
         }
 
         /// <summary>
         /// Pops the top element off the data stack and immediately disposes of it
         /// </summary>
         /// <param name="e">Current environment</param>
-        /// <returns>New environment</returns>
+        /// <returns>Modified environment</returns>
         public static FEnvironment FDrop(FEnvironment e)
         {
-            var s = e.DataStack;
-            s.Pop();
-            return new FEnvironment(s, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
+            e.DataStack.Pop();
+            return e;
         }
 
         /// <summary>
         /// Like FDrop, but prints the top of the stack to the console before disposing of it.
         /// </summary>
         /// <param name="e">Current environment</param>
-        /// <returns>New environment</returns>
+        /// <returns>Modified environment</returns>
         public static FEnvironment FDot(FEnvironment e)
         {
-            var s = e.DataStack;
-            var (t, v) = s.Pop();
+            var (t, v) = e.DataStack.Pop();
             System.Console.WriteLine(v);
-            return new FEnvironment(s, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
+            return e;
         }
 
         /// <summary>
@@ -154,25 +151,24 @@ namespace Forsch
         /// If they're of the same type, pushes True if they're equal, False if they're not.
         /// </summary>
         /// <param name="e">Current environment</param>
-        /// <returns>New environment</returns>
+        /// <returns>Modified environment</returns>
         public static FEnvironment FEq(FEnvironment e)
         {
-            var s = e.DataStack;
-            var (xt, xv) = s.Pop();
-            var (yt, yv) = s.Pop();
+            var (xt, xv) = e.DataStack.Pop();
+            var (yt, yv) = e.DataStack.Pop();
             if (xt != yt)
                 throw new Exception($"Unable to compare equality of ({xt},{xv}) and ({yt}, {yv})");
 
             var res = xt switch
             {
-                FType.FInt => System.Convert.ToInt32(xv) == System.Convert.ToInt32(yv),
-                FType.FFloat => Math.Abs(System.Convert.ToSingle(xv) - System.Convert.ToSingle(yv)) < 0.0001,
+                FType.FInt => Convert.ToInt32(xv) == Convert.ToInt32(yv),
+                FType.FFloat => Math.Abs(Convert.ToSingle(xv) - Convert.ToSingle(yv)) < 0.0001,
                 _ => xv == yv
             };
             
-            s.Push((FType.FBool, res.ToString()));
+            e.DataStack.Push((FType.FBool, res.ToString()));
 
-            return new FEnvironment(s, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
+            return e;
         }
 
         /// <summary>
@@ -183,16 +179,15 @@ namespace Forsch
         /// <returns></returns>
         public static FEnvironment FRandInt(FEnvironment e)
         {
-            var s = e.DataStack;
-            var (xt, xv) = s.Pop();
-            var (yt, yv) = s.Pop();
+            var (xt, xv) = e.DataStack.Pop();
+            var (yt, yv) = e.DataStack.Pop();
             if (!(xt == yt && xt == FType.FInt))
                 throw new Exception($"Type error: Unable to generate a random integer with ({xt},{xv}) and ({yt}, {yv})");
             
             var rval = new Random().Next(Convert.ToInt16(yv), Convert.ToInt16(xv));
             e.DataStack.Push((FType.FInt, rval.ToString()));
-            
-            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
+
+            return e;
         }
 
         /// <summary>
@@ -200,47 +195,45 @@ namespace Forsch
         /// Pushes result on to stack.
         /// </summary>
         /// <param name="e">Current environment</param>
-        /// <returns>New environment</returns>
+        /// <returns>Modified environment</returns>
         /// <exception cref="Exception">Throws exception if types don't match</exception>
         public static FEnvironment FAdd(FEnvironment e)
         {
-            var s = e.DataStack;
-            var (xt, xv) = s.Pop();
-            var (yt, yv) = s.Pop();
+            var (xt, xv) = e.DataStack.Pop();
+            var (yt, yv) = e.DataStack.Pop();
             if (xt != yt)
                 throw new Exception($"Unable to add ({xt},{xv}) and ({yt}, {yv}): Mismatched types");
 
             var res = xt switch
             {
-                FType.FInt => (System.Convert.ToInt32(yv) + System.Convert.ToInt32(xv)).ToString(),
-                FType.FFloat => $"{System.Convert.ToSingle(yv) + System.Convert.ToSingle(xv):0.0000}",
+                FType.FInt => (Convert.ToInt32(yv) + Convert.ToInt32(xv)).ToString(),
+                FType.FFloat => $"{Convert.ToSingle(yv) + Convert.ToSingle(xv):0.0000}",
                 FType.FStr => yv + xv,
                 _ => throw new Exception($"Unable to add value of type {xt}")
             };
-            s.Push((xt, res));
             
-            return new FEnvironment(s, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
+            e.DataStack.Push((xt, res));
+
+            return e;
         }
 
         public static FEnvironment FMult(FEnvironment e)
         {   
-            var s = e.DataStack;
-            var (xt, xv) = s.Pop();
-            var (yt, yv) = s.Pop();
+            var (xt, xv) = e.DataStack.Pop();
+            var (yt, yv) = e.DataStack.Pop();
             if (xt != yt)
                 throw new Exception($"Unable to multiply ({xt},{xv}) and ({yt}, {yv}): Type mismatch");
 
             var res = xt switch
             {
-                FType.FInt => (System.Convert.ToInt32(xv) * System.Convert.ToInt32(yv)).ToString(),
-                FType.FFloat => $"{System.Convert.ToSingle(xv) * System.Convert.ToSingle(yv):0.0000}",
+                FType.FInt => (Convert.ToInt32(xv) * Convert.ToInt32(yv)).ToString(),
+                FType.FFloat => $"{Convert.ToSingle(xv) * Convert.ToSingle(yv):0.0000}",
                 _ => throw new Exception(($"Can't multiply value of type {xt}"))
             };
 
-            s.Push((xt, res));
-            
-            return new FEnvironment(s, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
-            
+            e.DataStack.Push((xt, res));
+
+            return e;
         }
         
         /// <summary>
@@ -251,29 +244,28 @@ namespace Forsch
         /// <exception cref="Exception"></exception>
         public static FEnvironment FDiv(FEnvironment e)
         {   
-            var s = e.DataStack;
-            var (xt, xv) = s.Pop();
-            var (yt, yv) = s.Pop();
+            var (xt, xv) = e.DataStack.Pop();
+            var (yt, yv) = e.DataStack.Pop();
             if (xt != yt)
                 throw new Exception($"Unable to divide ({xt},{xv}) and ({yt}, {yv}): Type mismatch");
 
             var res = xt switch
             {
-                FType.FInt => (System.Convert.ToInt32(yv) / System.Convert.ToInt32(xv)).ToString(),
-                FType.FFloat => $"{System.Convert.ToSingle(yv) / System.Convert.ToSingle(xv):0.0000}",
+                FType.FInt => (Convert.ToInt32(yv) / Convert.ToInt32(xv)).ToString(),
+                FType.FFloat => $"{Convert.ToSingle(yv) / Convert.ToSingle(xv):0.0000}",
                 _ => throw new Exception(($"Can't multiply value of type {xt}"))
             };
 
-            s.Push((xt, res));
-            
-            return new FEnvironment(s, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
+            e.DataStack.Push((xt, res));
+
+            return e;
         }
 
         public static int ReadIntParam(List<string> input, int curIndex)
         {
-            if (!int.TryParse(input[curIndex], out var offset))
-                throw new Exception("Attempted to branch with no branch offset");
-            return offset;
+            if (!int.TryParse(input[curIndex], out var parameter))
+                throw new Exception("Expected word " + input[curIndex] + " to be an integer.");
+            return parameter;
         }
 
         /// <summary>
@@ -284,7 +276,7 @@ namespace Forsch
         /// Otherwise, return an environment with the input starting after the int
         /// </summary>
         /// <param name="e">Current environment</param>
-        /// <returns>New environment</returns>
+        /// <returns>Modified environment</returns>
         /// <exception cref="Exception">Throws exception if no boolean on the stack or if no integer following</exception>
         public static FEnvironment FBranchOnFalse(FEnvironment e)
         {
@@ -294,20 +286,22 @@ namespace Forsch
                 throw new Exception("Attempted to branch with non-boolean value");
 
             if (bv == "False")
-                return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, newIndex + 1, e.CurWord, e.CurWordDef);
+                e.InputIndex = newIndex + 1;
             else
-                return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex + 1, e.CurWord, e.CurWordDef);
+                e.InputIndex += 1;
+            return e;
         }
 
         /// <summary>
-        /// Shifts the input index to the  indicated by the next word in the input 
+        /// Shifts InputIndex to the next integer value in the current input.
         /// </summary>
         /// <param name="e">Current environment</param>
         /// <returns>New Environment</returns>
         public static FEnvironment FBranch(FEnvironment e)
         {  
             var offset = ReadIntParam(e.Input, e.InputIndex);
-            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, offset, e.CurWord, e.CurWordDef);
+            e.InputIndex = offset;
+            return e;
         }
 
         /// <summary>
@@ -315,18 +309,18 @@ namespace Forsch
         /// ignoring everything it finds.
         /// </summary>
         /// <param name="e">Current environment</param>
-        /// <returns>New environment</returns>
+        /// <returns>Modified environment</returns>
         public static FEnvironment FComment(FEnvironment e)
         {
-            var newIndex = e.Input.IndexOf(")");
-
-            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, newIndex + 1, e.CurWord, e.CurWordDef);
+            e.InputIndex = e.Input.IndexOf(")") + 1;
+            return e;
         }
 
         /// <summary>
         /// "Surveys" the contents of the stack.
-        /// That is, it outputs the whole stack:
-        /// left is the bottommost, right is the topmost
+        /// That is, it outputs the whole stack
+        /// as a series of (type, value) pairs.
+        /// left is the bottommost element of the stack, right is the topmost
         /// </summary>
         /// <param name="e">Current environment</param>
         /// <returns>The same, unchanged environment</returns>
@@ -348,13 +342,13 @@ namespace Forsch
         /// If it's True, 
         /// </summary>
         /// <param name="e">Current environment</param>
-        /// <returns>New environment</returns>
+        /// <returns>Modified environment</returns>
         /// <exception cref="Exception">Throws exception if top of stack is False (or not a boolean)</exception>
         public static FEnvironment FAssert(FEnvironment e)
         {
             var (bt, bv) = e.DataStack.Pop();
             if (bt == FType.FBool && bv == "True")
-                return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
+                return e;
             else
                 throw new Exception("Assert Failed on line: \n" + String.Join(" ", e.Input));
         }
@@ -368,18 +362,18 @@ namespace Forsch
         {
             var isEmpty = !e.DataStack.Any();
             e.DataStack.Push((FType.FBool, isEmpty.ToString()));
-            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
+            return e;
         }
 
         /// <summary>
         /// Pushes the current e.InputIndex to the stack
         /// </summary>
         /// <param name="e">Current environment</param>
-        /// <returns>New environment</returns>
+        /// <returns>Modified environment</returns>
         public static FEnvironment FHere(FEnvironment e)
         {
             e.DataStack.Push((FType.FInt, (e.CurWordDef.Count() - 1).ToString()));
-            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
+            return e;
         }
 
         /// <summary>
@@ -387,20 +381,20 @@ namespace Forsch
         /// and then inserts that string into e.CurWordDef at that index.
         /// </summary>
         /// <param name="e">Current environment</param>
-        /// <returns>New environment</returns>
+        /// <returns>Modified environment</returns>
         public static FEnvironment FStore(FEnvironment e)
         {
             var (_,s) = e.DataStack.Pop();
             var (_,i) = e.DataStack.Pop();
             e.CurWordDef[Convert.ToInt16(i)] = s;
-            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
+            return e;
         }
 
         /// <summary>
         /// Grabs the input up to the closing brace and appends it to CurWordDef
         /// </summary>
         /// <param name="e">Current environment</param>
-        /// <returns>New environment</returns>
+        /// <returns>Modified environment</returns>
         public static FEnvironment FForceCompile(FEnvironment e)
         {
             var closingBraceIndex = -1;
@@ -417,19 +411,21 @@ namespace Forsch
                 throw new Exception("Parsing error: no closing brace ]");
 
             var newWordDef = e.CurWordDef.Concat(e.Input.GetRange(e.InputIndex, closingBraceIndex - 1)).ToList();
-            
-            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, closingBraceIndex + 1, e.CurWord, newWordDef);
+
+            e.InputIndex = closingBraceIndex + 1;
+            e.CurWordDef = newWordDef;
+            return e;
         }
 
         /// <summary>
-        /// In compile mode, appends itself to CurWordDef
-        /// In execute mode, Switches to compile mode
+        /// Switches environment to execute mode
         /// </summary>
         /// <param name="e">Current environment</param>
-        /// <returns>New environment</returns>
+        /// <returns>Modified environment</returns>
         public static FEnvironment FForceExecute(FEnvironment e)
         {
-            return new FEnvironment(e.DataStack, e.WordDict, e.Input, FMode.Execute, e.InputIndex, e.CurWord, e.CurWordDef);
+            e.Mode = FMode.Execute;
+            return e;
         }
 
 
@@ -441,7 +437,7 @@ namespace Forsch
         /// the string is inserted as separate words
         /// </summary>
         /// <param name="e">Current environment</param>
-        /// <returns>New environment</returns>
+        /// <returns>Modified environment</returns>
         public static FEnvironment FDictInsert(FEnvironment e)
         {
             var (_, s) = e.DataStack.Pop();
@@ -449,13 +445,15 @@ namespace Forsch
             {
                 var words = s.Split();
                 var newWordDef = e.CurWordDef.Concat(words).ToList();
-                return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, newWordDef);
+                e.CurWordDef = newWordDef;
             }
             else
             {
                 var newWordDef = new List<string>(e.CurWordDef) {s};
-                return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, newWordDef);
+                e.CurWordDef = newWordDef;
             }
+
+            return e;
         }
 
         /// <summary>
@@ -471,7 +469,7 @@ namespace Forsch
             var (_, s) = e.DataStack.Pop();
             var result = s.Replace("_", " ");
             e.DataStack.Push((FType.FStr, result));
-            return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
+            return e;
         }
 
         /// <summary>
@@ -482,7 +480,8 @@ namespace Forsch
         public static FEnvironment FEndWord(FEnvironment e)
         {
             e.WordDict[e.CurWord] = new Word(WordWrapper(e.CurWordDef), false);
-            return new FEnvironment(e.DataStack, e.WordDict, e.Input, FMode.Halt, e.InputIndex, null, null);
+            e.Mode = FMode.Halt;
+            return e;
         }
 
         /// <summary>
@@ -492,7 +491,7 @@ namespace Forsch
         /// e.WordDict. 
         /// </summary>
         /// <param name="e">Current environment</param>
-        /// <returns>New environment</returns>
+        /// <returns>Modified environment</returns>
         public static FEnvironment FWord(FEnvironment e)
         {
             var wordName = e.Input[e.InputIndex];

@@ -54,46 +54,45 @@ namespace Forsch
     /// <summary>
     /// Holds all the information about the current execution context,
     /// passed around to and from almost every function.
-    /// It was written as readonly with the intention of making it immutable
-    /// for ease of debugging and testing.
     ///
-    /// In C# 9 I would use records for this, since that's what I'm poorly imitating here throughout.
+    /// I wanted to use records for this but got tired of fighting with the IDE to let me use C# 9.
     /// </summary>
-    public readonly struct FEnvironment
+    public struct FEnvironment
     {
         /// <summary>
         /// "The Stack" -- the main Forth stack. Sometimes Forths use other stacks, but Forsch has only one.
         /// </summary>
-        public FStack DataStack { get; }
+        public FStack DataStack;
+
         /// <summary>
         /// The dictionary containing all premade words, along with any user-defined words added at runtime.
         /// </summary>
-        public FWordDict WordDict { get; }
-        
+        public FWordDict WordDict;
+
         /// <summary>
         /// Reference to the definition of current word being compiled
         /// </summary>
-        public List<String> CurWordDef { get; }
+        public List<String> CurWordDef;
 
         /// <summary>
         /// Name of current word being compiled
         /// </summary>
-        public String CurWord { get; }
-        
+        public String CurWord;
+
         /// <summary>
         /// The list of words to be evaluated.
         /// </summary>
-        public List<String> Input { get; }
-        
+        public List<String> Input;
+
         /// <summary>
         /// The current mode, as described in the enum above.
         /// </summary>
-        public FMode Mode { get; }
-        
+        public FMode Mode;
+
         /// <summary>
         /// Current index of next word to consume.
         /// </summary>
-        public int InputIndex { get; }
+        public int InputIndex;
         
         public FEnvironment(FStack dataStack, FWordDict wordDict, List<string> input, 
             FMode mode, int inputIndex, string curWord, List<string> curWordDef)
