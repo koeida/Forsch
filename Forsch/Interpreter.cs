@@ -72,7 +72,10 @@ namespace Forsch
         {
             var (t, v) = token;
             if (t == FType.FNull)
-                return new FEnvironment(e.DataStack, e.WordDict, new List<string>(), FMode.Halt, e.InputIndex, e.CurWord, e.CurWordDef);
+            {
+                e.Mode = FMode.Halt;
+                return e;
+            }
 
             // In compile mode, words are just appended onto CurWordDef one at a time
             // unless they're immediate words.
@@ -82,17 +85,15 @@ namespace Forsch
                 if (t == FType.FWord && e.WordDict[v].IsImmediate)
                 {
                     //Extremely verbose way of switching a single boolean. Change this.
-                    var immediateEnvironment = new FEnvironment(e.DataStack, e.WordDict, e.Input, FMode.Execute,
-                        e.InputIndex, e.CurWord, e.CurWordDef);
-                    var result = e.WordDict[v].WordFunc(immediateEnvironment);
-                    return new FEnvironment(result.DataStack, result.WordDict, result.Input, FMode.Compile,
-                        result.InputIndex, result.CurWord, result.CurWordDef);
+                    e.Mode = FMode.Execute;
+                    var result = e.WordDict[v].WordFunc(e);
+                    result.Mode = FMode.Compile;
+                    return result;
                 }
                 else
                 {
                     e.CurWordDef.Add(v);
-                    return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord,
-                        e.CurWordDef);
+                    return e;
                 }
             }
             else if (e.Mode == FMode.Execute)
@@ -105,7 +106,7 @@ namespace Forsch
                 else
                 {
                     e.DataStack.Push((t, v));
-                    return new FEnvironment(e.DataStack, e.WordDict, e.Input, e.Mode, e.InputIndex, e.CurWord, e.CurWordDef);
+                    return e;
                 }
             }
             else
