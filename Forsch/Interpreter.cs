@@ -64,27 +64,41 @@ namespace Forsch
         }
         
         /// <summary>
-        /// Tokenizes the 
+        /// Evaluates the next token on the stream.
+        /// 
+        /// Evaluation depends on what mode the interpreter is in,
+        /// compile mode or execute mode.
+        /// 
+        /// In compile mode, we're appending words onto CurWordDef
+        /// unless the words are flagged as immediate words. Immediate
+        /// words are executed immediately as if it were execute mode,
+        /// after which we return to compile mode. Clever use of compile
+        /// mode with immediate words allows us to define a large number
+        /// of control structures (e.g, IF/THEN) in forth itself without
+        /// having to define them in the interpreter.
+        ///
+        /// In execute mode, we immediately push tokens onto the stack
+        /// unless they represent words defined in the word dictionary, in which case
+        /// we jump to that word definition and begin evaluation on it.
         /// </summary>
-        /// <param name="e"></param>
-        /// <returns></returns>
+        /// <param name="e">Current environment</param>
+        /// <param name="token">THe next token on the stream</param>
+        /// <returns>Modified environment</returns>
         public static FEnvironment Eval(FEnvironment e, (FType, String) token)
         {
             var (t, v) = token;
+            
+            //Null token received: We're done evaluating this input stream.
             if (t == FType.FNull)
             {
                 e.Mode = FMode.Halt;
                 return e;
             }
 
-            // In compile mode, words are just appended onto CurWordDef one at a time
-            // unless they're immediate words.
-            // Immediate words are immediately executed even though we're in compile mode.
             if (e.Mode == FMode.Compile)
             {
                 if (t == FType.FWord && e.WordDict[v].IsImmediate)
                 {
-                    //Extremely verbose way of switching a single boolean. Change this.
                     e.Mode = FMode.Execute;
                     var result = e.WordDict[v].WordFunc(e);
                     result.Mode = FMode.Compile;
@@ -98,11 +112,8 @@ namespace Forsch
             }
             else if (e.Mode == FMode.Execute)
             {
-                // If it's a word, execute it. If it's not a word, push it onto the stack.
                 if (t == FType.FWord)
-                {
                     return e.WordDict[v].WordFunc(e);
-                }
                 else
                 {
                     e.DataStack.Push((t, v));
@@ -110,9 +121,7 @@ namespace Forsch
                 }
             }
             else
-            {
                 throw new Exception("Mode error: Somehow we're in eval but neither executing nor compiling.");
-            }
         }
 
         /// <summary>
