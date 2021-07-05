@@ -11,7 +11,8 @@ namespace Forsch
 
     public static class Program
     {
-        /// <summary> /// Spins up a new Forsch interpreter on standard input
+        /// <summary>
+        /// Spins up a new Forsch interpreter on standard input
         /// </summary>
         /// <param name="args"></param>
         public static void Main(string[] args)
