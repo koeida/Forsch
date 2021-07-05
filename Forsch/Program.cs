@@ -23,7 +23,7 @@ namespace Forsch
             var preloadedEnvironment = RunInterpreter(initialEnvironment, predefinedWordFile.ReadLine);
             predefinedWordFile.Close();
 
-            //We desperately need record syntax here ugh.
+            // Spin up a fresh environment with the predefined words loaded in
             var e = new FEnvironment(preloadedEnvironment.DataStack, preloadedEnvironment.WordDict,
                 new List<string>(), FMode.Execute, 0, null, null);
             RunInterpreter(e, Console.ReadLine);
