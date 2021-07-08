@@ -141,7 +141,7 @@ namespace Forsch
         public static FEnvironment FDot(FEnvironment e)
         {
             var (t, v) = e.DataStack.Pop();
-            System.Console.WriteLine(v);
+            e.WriteLine(v);
             return e;
         }
 
@@ -332,7 +332,7 @@ namespace Forsch
                 .Aggregate("", (a, x) => a + $" ({x.Item1},{x.Item2})")
                 .Trim();
                 
-            Console.Out.WriteLine(s);
+            e.WriteLine(s);
             return e;
         }
 
@@ -511,12 +511,12 @@ namespace Forsch
             
             //Spin off a new interpreter in compile mode pointed at this fresh word data
             var newEnv = RunInterpreter(
-                new FEnvironment(e.DataStack, e.WordDict, wordData, FMode.Compile, e.InputIndex, wordName, new List<string>()),
+                new FEnvironment(e.DataStack, e.WordDict, wordData, FMode.Compile, e.InputIndex, wordName, new List<string>(), e.WriteLine),
                 () => null);
 
             newEnv.WordDict[wordName].IsImmediate = immediateMode;
             //Return back to normal execution context with our new word added to the word dictionary
-            return new FEnvironment(newEnv.DataStack, newEnv.WordDict, new List<string>(), e.Mode, 0, null, null);
+            return new FEnvironment(newEnv.DataStack, newEnv.WordDict, new List<string>(), e.Mode, 0, null, null, e.WriteLine);
         }
     }
 }

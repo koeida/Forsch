@@ -23,11 +23,11 @@ namespace Forsch
         {
             return (FEnvironment e) =>
             {
-                var tempEnv = new FEnvironment(e.DataStack, e.WordDict, wordData, e.Mode, 0, e.CurWord, e.CurWordDef);
+                var tempEnv = new FEnvironment(e.DataStack, e.WordDict, wordData, e.Mode, 0, e.CurWord, e.CurWordDef, e.WriteLine);
                 
                 var resultEnv = RunInterpreter(tempEnv, () => null);
 
-                return new FEnvironment(resultEnv.DataStack, resultEnv.WordDict, e.Input, FMode.Execute, e.InputIndex, e.CurWord, resultEnv.CurWordDef);
+                return new FEnvironment(resultEnv.DataStack, resultEnv.WordDict, e.Input, FMode.Execute, e.InputIndex, e.CurWord, resultEnv.CurWordDef, e.WriteLine);
             };
         }
 
@@ -131,7 +131,7 @@ namespace Forsch
         /// </summary>
         /// <param name="input">Current list of untokenized words</param>
         /// <param name="readLine">Function to grab a new line from a stream</param>
-        /// <param name="wordDict">The Forsch word dictionary</param>
+        /// <param name="wordDict">The ForschLib word dictionary</param>
         /// <returns></returns>
         public static ((FType, String) token, List<string> input, int newIndex) Read(List<string> input, int inputIndex, Func<string> readLine, FWordDict wordDict)
         {
@@ -152,9 +152,9 @@ namespace Forsch
         }
 
         /// <summary>
-        /// Given a Forsch environment and a function to read lines from the stream,
+        /// Given a ForschLib environment and a function to read lines from the stream,
         /// this begins an evaluation loop on that stream until it is complete,
-        /// returning the new Forsch environment.
+        /// returning the new ForschLib environment.
         /// </summary>
         /// <param name="e">Current environment</param>
         /// <param name="readLine">Function to grab a line from a stream</param>
@@ -164,7 +164,7 @@ namespace Forsch
             while (e.Mode != FMode.Halt)
             {
                 var (token, input, newIndex) = Read(e.Input, e.InputIndex, readLine, e.WordDict);
-                e = new FEnvironment(e.DataStack, e.WordDict, input, e.Mode, newIndex, e.CurWord, e.CurWordDef);
+                e = new FEnvironment(e.DataStack, e.WordDict, input, e.Mode, newIndex, e.CurWord, e.CurWordDef, e.WriteLine);
                 e = Eval(e, token);
             }
 

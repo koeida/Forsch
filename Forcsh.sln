@@ -1,6 +1,10 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Forsch", "Forsch\Forsch.csproj", "{D6CABD97-FD7D-42E9-B953-7BE65CCD759F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ForschLib", "ForschLib\ForschLib.csproj", "{D6CABD97-FD7D-42E9-B953-7BE65CCD759F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ForschService", "ForschService\ForschService.csproj", "{1ADA47B1-AD0F-4A98-8104-4CC818ED760F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Forsch", "Forsch\Forsch.csproj", "{A9A8E742-A61D-44D3-B845-91C0DFD8FB08}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -8,9 +12,17 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{D6CABD97-FD7D-42E9-B953-7BE65CCD759F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D6CABD97-FD7D-42E9-B953-7BE65CCD759F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D6CABD97-FD7D-42E9-B953-7BE65CCD759F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D6CABD97-FD7D-42E9-B953-7BE65CCD759F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D6CABD97-FD7D-42E9-B953-7BE65CCD759F}.Debug|Any CPU.ActiveCfg = Release|Any CPU
+		{D6CABD97-FD7D-42E9-B953-7BE65CCD759F}.Debug|Any CPU.Build.0 = Release|Any CPU
+		{1ADA47B1-AD0F-4A98-8104-4CC818ED760F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1ADA47B1-AD0F-4A98-8104-4CC818ED760F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1ADA47B1-AD0F-4A98-8104-4CC818ED760F}.Debug|Any CPU.ActiveCfg = Release|Any CPU
+		{1ADA47B1-AD0F-4A98-8104-4CC818ED760F}.Debug|Any CPU.Build.0 = Release|Any CPU
+		{A9A8E742-A61D-44D3-B845-91C0DFD8FB08}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A9A8E742-A61D-44D3-B845-91C0DFD8FB08}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A9A8E742-A61D-44D3-B845-91C0DFD8FB08}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A9A8E742-A61D-44D3-B845-91C0DFD8FB08}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

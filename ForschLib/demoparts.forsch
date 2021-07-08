@@ -38,16 +38,17 @@ INIT
 60 DOT
 
 ( First demo with words )
-INIT
 : DOTLINE 10 FD 10 DOT 25 FD 15 DOT 50 FD 30 DOT 100 FD 60 DOT 90 RT ;
 : DOTSQUARE DOTLINE DOTLINE DOTLINE DOTLINE ;
 : DOTSQUARELOOP 0 BEGIN DOTSQUARE 50 FD 45 RT 1 + DUP 8 = UNTIL ;
+
+INIT
 0 SPEED
 DOTSQUARELOOP
 
 ( Flowers Demo )
 INIT
-SPEED 0
+0 SPEED 
 tracer(500,500) .
 colormode(255) .
 ( stem  dandflower  dandelion  row  field )

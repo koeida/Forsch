@@ -23,7 +23,7 @@ namespace Forsch
         }
     }
     /// <summary>
-    /// Represents the different modes of the Forsch interpreter.
+    /// Represents the different modes of the ForschLib interpreter.
     /// Halt indicates that the environment should halt its read/eval loop.
     /// Execute indicates that the environment should continue immediately interpreting each new word.
     /// Compile indicates the the environment should compile each new word instead of immediately executing it.
@@ -36,8 +36,8 @@ namespace Forsch
     };
     
     /// <summary>
-    /// The basic set of types in Forsch.
-    /// FWord represents a Forsch word (a subroutine reference)
+    /// The basic set of types in ForschLib.
+    /// FWord represents a ForschLib word (a subroutine reference)
     /// An FNull token is used to indicate that the program or subroutine should terminate:
     /// It's pushed onto the stack when the input stream is empty.
     /// The rest map onto C# types.
@@ -60,7 +60,7 @@ namespace Forsch
     public struct FEnvironment
     {
         /// <summary>
-        /// "The Stack" -- the main Forth stack. Sometimes Forths use other stacks, but Forsch has only one.
+        /// "The Stack" -- the main Forth stack. Sometimes Forths use other stacks, but ForschLib has only one.
         /// </summary>
         public FStack DataStack;
 
@@ -93,9 +93,11 @@ namespace Forsch
         /// Current index of next word to consume.
         /// </summary>
         public int InputIndex;
+
+        public Action<string> WriteLine;
         
-        public FEnvironment(FStack dataStack, FWordDict wordDict, List<string> input, 
-            FMode mode, int inputIndex, string curWord, List<string> curWordDef)
+        public FEnvironment(FStack dataStack, FWordDict wordDict, List<string> input,
+            FMode mode, int inputIndex, string curWord, List<string> curWordDef, Action<string> writeLine)
         {
             DataStack = dataStack;
             WordDict = wordDict;
@@ -104,6 +106,7 @@ namespace Forsch
             Mode = mode;
             CurWordDef = curWordDef;
             CurWord = curWord;
+            WriteLine = writeLine;
         }
     }
 }
