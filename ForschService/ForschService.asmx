@@ -12,7 +12,7 @@ namespace Forsch
     using FStack = Stack<(FType, String)>;
     using FWordDict = Dictionary<string, Word>;
     
-    [WebService (Namespace="http://ForschService/ForschService")]
+    [WebService (Namespace="http://forsch-service/ForschService")]
     public class ForschService : WebService
     {
         public string output;
