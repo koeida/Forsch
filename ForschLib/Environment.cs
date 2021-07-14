@@ -15,11 +15,13 @@ namespace Forsch
     {
         public Func<FEnvironment, FEnvironment> WordFunc;
         public bool IsImmediate;
+        public string[] WordText;
 
-        public Word(Func<FEnvironment, FEnvironment> wordFunc, bool isImmediate)
+        public Word(Func<FEnvironment, FEnvironment> wordFunc, bool isImmediate, string[] wordText)
         {
             WordFunc = wordFunc;
             IsImmediate = isImmediate;
+            WordText = wordText;
         }
     }
     /// <summary>

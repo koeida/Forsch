@@ -18,32 +18,32 @@ namespace Forsch
         /// </summary>
         public static FWordDict BuiltinWords = new FWordDict
         {
-            ["+"] = new Word(FAdd, false),
-            ["*"] = new Word(FMult, false),
-            ["/"] = new Word(FDiv, false),
-            ["."] = new Word(FDot, false),
-            ["="] = new Word(FEq, false),
-            [":"] = new Word(FWord, false),
-            [";"] = new Word(FEndWord, true),
-            ["["] = new Word(FForceCompile, false),
-            ["]"] = new Word(FForceExecute, false),
-            ["RAND"] = new Word(FRandInt,false),
-            ["DUP"] = new Word(FDup, false),
-            ["DROP"] = new Word(FDrop, false),
-            ["ASSERT"] = new Word(FAssert, false),
-            ["SWAP"] = new Word(FSwap, false),
-            ["OVER"] = new Word(FOver, false),
-            ["ROT"] = new Word(FRot, false),
-            ["PICK"] = new Word(FPick, false),
-            ["BRANCH"] = new Word(FBranch, false),
-            ["BRANCH?"] = new Word(FBranchOnFalse, false),
-            ["SURVEY"] = new Word(FSurvey, false),
-            ["EMPTY?"] = new Word(FIsEmpty, false),
-            ["HERE"] = new Word(FHere, false),
-            ["!"] = new Word(FStore, false),
-            [","] = new Word(FDictInsert, false),
-            ["\""] = new Word(FToString, false),
-            ["("] = new Word(FComment, false),
+            ["+"] = new Word(FAdd, false, null),
+            ["*"] = new Word(FMult, false, null),
+            ["/"] = new Word(FDiv, false, null),
+            ["."] = new Word(FDot, false, null),
+            ["="] = new Word(FEq, false, null),
+            [":"] = new Word(FWord, false, null),
+            [";"] = new Word(FEndWord, true, null),
+            ["["] = new Word(FForceCompile, false, null),
+            ["]"] = new Word(FForceExecute, false, null),
+            ["RAND"] = new Word(FRandInt,false, null),
+            ["DUP"] = new Word(FDup, false, null),
+            ["DROP"] = new Word(FDrop, false, null),
+            ["ASSERT"] = new Word(FAssert, false, null),
+            ["SWAP"] = new Word(FSwap, false, null),
+            ["OVER"] = new Word(FOver, false, null),
+            ["ROT"] = new Word(FRot, false, null),
+            ["PICK"] = new Word(FPick, false, null),
+            ["BRANCH"] = new Word(FBranch, false, null),
+            ["BRANCH?"] = new Word(FBranchOnFalse, false, null),
+            ["SURVEY"] = new Word(FSurvey, false, null),
+            ["EMPTY?"] = new Word(FIsEmpty, false, null),
+            ["HERE"] = new Word(FHere, false, null),
+            ["!"] = new Word(FStore, false, null),
+            [","] = new Word(FDictInsert, false, null),
+            ["\""] = new Word(FToString, false, null),
+            ["("] = new Word(FComment, false, null),
         };
 
         /// <summary>
@@ -479,7 +479,7 @@ namespace Forsch
         /// <returns>The same environment</returns>
         public static FEnvironment FEndWord(FEnvironment e)
         {
-            e.WordDict[e.CurWord] = new Word(WordWrapper(e.CurWordDef), false);
+            e.WordDict[e.CurWord] = new Word(WordWrapper(e.CurWordDef), false, e.CurWordDef.ToArray());
             e.Mode = FMode.Halt;
             return e;
         }
