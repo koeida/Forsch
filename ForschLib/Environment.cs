@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Forsch
 {
@@ -109,6 +111,19 @@ namespace Forsch
             CurWordDef = curWordDef;
             CurWord = curWord;
             WriteLine = writeLine;
+        }
+    }
+
+    public class EnvironmentConverter : JsonConverter<FEnvironment>
+    {
+        public override FEnvironment Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void Write(Utf8JsonWriter writer, FEnvironment value, JsonSerializerOptions options)
+        {
+            throw new NotImplementedException();
         }
     }
 }
