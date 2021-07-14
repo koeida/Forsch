@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text.Json;
 
 namespace Forsch
 {
@@ -162,13 +164,51 @@ namespace Forsch
         public static FEnvironment RunInterpreter(FEnvironment e, Func<string> readLine)
         {
             while (e.Mode != FMode.Halt)
-            {
-                var (token, input, newIndex) = Read(e.Input, e.InputIndex, readLine, e.WordDict);
-                e = new FEnvironment(e.DataStack, e.WordDict, input, e.Mode, newIndex, e.CurWord, e.CurWordDef, e.WriteLine);
-                e = Eval(e, token);
-            }
+                e = StepEnvironment(e, readLine);
 
             return e;
+        }
+
+        public static FEnvironment StepEnvironment(FEnvironment e, Func<string> readLine)
+        {
+            var (token, input, newIndex) = Read(e.Input, e.InputIndex, readLine, e.WordDict);
+            e = new FEnvironment(e.DataStack, e.WordDict, input, e.Mode, newIndex, e.CurWord, e.CurWordDef, e.WriteLine);
+            e = Eval(e, token);
+            return e;
+        }
+        
+        public static void SerializeEnvironment(FEnvironment e, StreamWriter s)
+        {
+            //Only serialize words that are user-defined.
+            var words = e
+                .WordDict
+                .Where(e => e.Value.WordText != null)
+                .Select(e => new Dictionary<string, object>
+                {
+                    {"IsImmediate", e.Value.IsImmediate},
+                    {"WordText", e.Value.WordText}
+                })
+                .ToList();
+            
+            var stack = e
+                .DataStack
+                .Select(v => new Dictionary<string, string> {{"type", v.Item1.ToString()}, {"value", v.Item2}});
+            
+            var EnvDict = new Dictionary<string,object>
+            {
+                {"DataStack", stack}, 
+                {"WordDict", words},
+                {"Input", e.Input},
+                {"InputIndex", e.InputIndex},
+                {"mode", e.Mode},
+                {"CurWordDef", e.CurWordDef},
+                {"CurWord", e.CurWord},
+            };
+            var o = new JsonSerializerOptions(){
+                WriteIndented = true
+            };
+            var result = JsonSerializer.Serialize(EnvDict, o);
+            Console.WriteLine(result);
         }
     }
 }

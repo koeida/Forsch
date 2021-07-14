@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+
+using System.Threading;
 
 namespace Forsch
 {
@@ -114,16 +117,4 @@ namespace Forsch
         }
     }
 
-    public class EnvironmentConverter : JsonConverter<FEnvironment>
-    {
-        public override FEnvironment Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override void Write(Utf8JsonWriter writer, FEnvironment value, JsonSerializerOptions options)
-        {
-            throw new NotImplementedException();
-        }
-    }
 }

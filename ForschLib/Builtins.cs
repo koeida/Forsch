@@ -479,7 +479,10 @@ namespace Forsch
         /// <returns>The same environment</returns>
         public static FEnvironment FEndWord(FEnvironment e)
         {
-            e.WordDict[e.CurWord] = new Word(WordWrapper(e.CurWordDef), false, e.CurWordDef.ToArray());
+            var stringDef = new List<string>();
+            stringDef.Add(e.CurWord);
+            stringDef.AddRange(e.CurWordDef);
+            e.WordDict[e.CurWord] = new Word(WordWrapper(e.CurWordDef), false, stringDef.ToArray());
             e.Mode = FMode.Halt;
             return e;
         }

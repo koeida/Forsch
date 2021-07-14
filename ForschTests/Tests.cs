@@ -15,8 +15,7 @@ namespace ForschTests
     public class Tests
     {
         /// <summary>
-        /// Ensure that serializing/unserializing the environment and running an evaluation cycle
-        /// produces the same environment as running an evaluation cycle without serialization.
+        /// Ensure that a serialized/unserialized environment is equal to the original.
         /// </summary>
         [Test]
         public void TestSerialization()
@@ -25,11 +24,14 @@ namespace ForschTests
             var predefinedWordFile = new System.IO.StreamReader(@"PredefinedWords.forsch");
             var preloadedEnvironment = RunInterpreter(initialEnvironment, predefinedWordFile.ReadLine);
             predefinedWordFile.Close();
+            
+            var testInput = new StringReader("1 1 + .");
+            preloadedEnvironment.Mode = FMode.Execute;
+            var steppedEnvironment = StepEnvironment(preloadedEnvironment, testInput.ReadLine);
 
             var fs = File.Create("EnvTest.json");
-            var writer = new Utf8JsonWriter(fs);
-            var options = new JsonSerializerOptions();
-            new EnvironmentConverter().Write(writer, preloadedEnvironment, options);
+            SerializeEnvironment(steppedEnvironment, new StreamWriter(fs));
+            fs.Close();
         }
     }
 }
