@@ -3,12 +3,15 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using JsonSerializer = System.Text.Json.JsonSerializer;
+using static Forsch.Builtins;
 
 namespace Forsch
 {
     using FStack = Stack<(FType, String)>;
     using FWordDict = Dictionary<string, Word>;
-    
     public static class Interpreter
     {
         /// <summary>
@@ -176,8 +179,43 @@ namespace Forsch
             e = Eval(e, token);
             return e;
         }
+
+        public static FEnvironment DeserializeEnvironment(StreamReader s, Action<string> writeLine)
+        {
+            var jText = s.ReadToEnd();
+            var jEnv = JsonConvert.DeserializeObject<JObject>(jText);
+            
+            var stackList = jEnv["DataStack"]
+                .Select(t =>
+                {
+                    var type = (FType) Enum.Parse(typeof(FType), t["type"].ToString());
+                    var value = t["value"].ToString();
+                    return (type, value);
+                });
+            var stack = new FStack(stackList);
+
+            // Build word dictionary combining builtin words with 
+            // user-defined words in json
+            var words = new FWordDict(BuiltinWords);
+            foreach (var jToken in jEnv["WordDict"])
+            {
+                var wordText = jToken["WordText"].Select(t => t.ToString());
+                var wordName = wordText.First();
+                var wordBody = wordText.Skip(1).ToList();
+                var isImmediate = bool.Parse(jToken["IsImmediate"].ToString());
+                words.Add(wordName, new Word(WordWrapper(wordBody), isImmediate, wordBody.ToArray()));
+            }
+
+            var input = jEnv["Input"].Select(t => t.ToString()).ToList();
+            var inputIndex = Convert.ToInt16(jEnv["InputIndex"].ToString());
+            var mode = (FMode) Enum.Parse(typeof(FMode), jEnv["mode"].ToString());
+            var curWordDef = jEnv["CurWordDef"].Select(t => t.ToString()).ToList();
+            var curWord = jEnv["CurWord"].ToString();
+
+            return new FEnvironment(stack, words, input, mode, inputIndex, curWord, curWordDef, writeLine);
+        }
         
-        public static void SerializeEnvironment(FEnvironment e, StreamWriter s)
+        public static void SerializeEnvironment(FEnvironment e, StreamWriter writer)
         {
             //Only serialize words that are user-defined.
             var words = e
@@ -200,15 +238,17 @@ namespace Forsch
                 {"WordDict", words},
                 {"Input", e.Input},
                 {"InputIndex", e.InputIndex},
-                {"mode", e.Mode},
+                {"mode", e.Mode.ToString()},
                 {"CurWordDef", e.CurWordDef},
                 {"CurWord", e.CurWord},
             };
-            var o = new JsonSerializerOptions(){
-                WriteIndented = true
-            };
-            var result = JsonSerializer.Serialize(EnvDict, o);
-            Console.WriteLine(result);
+            
+            //var o = new JsonSerializerOptions(){
+            //    WriteIndented = true
+            //};
+            var result = JsonSerializer.Serialize(EnvDict);
+            
+            writer.Write(result);
         }
     }
 }

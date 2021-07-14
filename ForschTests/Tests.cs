@@ -20,7 +20,7 @@ namespace ForschTests
         [Test]
         public void TestSerialization()
         {
-            var initialEnvironment = new FEnvironment(new FStack(), BuiltinWords, new List<string>(), FMode.Execute, 0, null, new List<string>(), Console.WriteLine);
+            var initialEnvironment = new FEnvironment(new FStack(), new FWordDict(BuiltinWords), new List<string>(), FMode.Execute, 0, null, new List<string>(), Console.WriteLine);
             var predefinedWordFile = new System.IO.StreamReader(@"PredefinedWords.forsch");
             var preloadedEnvironment = RunInterpreter(initialEnvironment, predefinedWordFile.ReadLine);
             predefinedWordFile.Close();
@@ -29,9 +29,12 @@ namespace ForschTests
             preloadedEnvironment.Mode = FMode.Execute;
             var steppedEnvironment = StepEnvironment(preloadedEnvironment, testInput.ReadLine);
 
-            var fs = File.Create("EnvTest.json");
-            SerializeEnvironment(steppedEnvironment, new StreamWriter(fs));
-            fs.Close();
+            var writer = new StreamWriter(@"EnvTest.json");
+            SerializeEnvironment(steppedEnvironment, writer);
+            writer.Close();
+            
+            var deserializedEnvironment = DeserializeEnvironment(new StreamReader(@"EnvTest.json"), Console.WriteLine);
+            Console.WriteLine("here");
         }
     }
 }
