@@ -34,7 +34,7 @@ namespace ForschTests
             writer.Close();
             
             var deserializedEnvironment = DeserializeEnvironment(new StreamReader(@"EnvTest.json"), Console.WriteLine);
-            Console.WriteLine("here");
+            Assert.AreEqual(steppedEnvironment, deserializedEnvironment);
         }
     }
 }

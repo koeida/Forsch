@@ -200,17 +200,20 @@ namespace Forsch
             foreach (var jToken in jEnv["WordDict"])
             {
                 var wordText = jToken["WordText"].Select(t => t.ToString());
-                var wordName = wordText.First();
-                var wordBody = wordText.Skip(1).ToList();
+                var wordName = jToken["WordName"].ToString();
                 var isImmediate = bool.Parse(jToken["IsImmediate"].ToString());
-                words.Add(wordName, new Word(WordWrapper(wordBody), isImmediate, wordBody.ToArray()));
+                words.Add(wordName, new Word(WordWrapper(wordText.ToList()), isImmediate, wordText.ToArray()));
             }
 
             var input = jEnv["Input"].Select(t => t.ToString()).ToList();
             var inputIndex = Convert.ToInt16(jEnv["InputIndex"].ToString());
             var mode = (FMode) Enum.Parse(typeof(FMode), jEnv["mode"].ToString());
-            var curWordDef = jEnv["CurWordDef"].Select(t => t.ToString()).ToList();
-            var curWord = jEnv["CurWord"].ToString();
+            var curWordDef = jEnv["CurWordDef"].Type == JTokenType.Null
+                ? null 
+                : jEnv["CurWordDef"].Select(t => t.ToString()).ToList();
+            var curWord = jEnv["CurWord"].Type == JTokenType.Null
+                ? null
+                : jEnv["CurWord"].ToString();
 
             return new FEnvironment(stack, words, input, mode, inputIndex, curWord, curWordDef, writeLine);
         }
@@ -223,6 +226,7 @@ namespace Forsch
                 .Where(e => e.Value.WordText != null)
                 .Select(e => new Dictionary<string, object>
                 {
+                    {"WordName", e.Key},
                     {"IsImmediate", e.Value.IsImmediate},
                     {"WordText", e.Value.WordText}
                 })
