@@ -1,12 +1,17 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text.Json;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using JsonSerializer = System.Text.Json.JsonSerializer;
+using static Forsch.Builtins;
 
 namespace Forsch
 {
     using FStack = Stack<(FType, String)>;
     using FWordDict = Dictionary<string, Word>;
-    
     public static class Interpreter
     {
         /// <summary>
@@ -162,13 +167,115 @@ namespace Forsch
         public static FEnvironment RunInterpreter(FEnvironment e, Func<string> readLine)
         {
             while (e.Mode != FMode.Halt)
-            {
-                var (token, input, newIndex) = Read(e.Input, e.InputIndex, readLine, e.WordDict);
-                e = new FEnvironment(e.DataStack, e.WordDict, input, e.Mode, newIndex, e.CurWord, e.CurWordDef, e.WriteLine);
-                e = Eval(e, token);
-            }
+                e = StepEnvironment(e, readLine);
 
             return e;
+        }
+
+        public static FEnvironment StepEnvironment(FEnvironment e, Func<string> readLine)
+        {
+            var (token, input, newIndex) = Read(e.Input, e.InputIndex, readLine, e.WordDict);
+            e = new FEnvironment(e.DataStack, e.WordDict, input, e.Mode, newIndex, e.CurWord, e.CurWordDef, e.WriteLine);
+            e = Eval(e, token);
+            return e;
+        }
+
+        public static FEnvironment DeserializeEnvironment(StreamReader s, Action<string> writeLine)
+        {
+            var jText = s.ReadToEnd();
+            var jEnv = JsonConvert.DeserializeObject<JObject>(jText);
+            
+            //Build data stack from JSON
+            var stackList = jEnv["DataStack"]
+                .Select(t =>
+                {
+                    var type = (FType) Enum.Parse(typeof(FType), t["type"].ToString());
+                    var value = t["value"].ToString();
+                    return (type, value);
+                });
+            var stack = new FStack(stackList);
+
+            // Build word dictionary combining builtin words with 
+            // user-defined words in json
+            var words = new FWordDict(BuiltinWords);
+            foreach (var jToken in jEnv["WordDict"])
+            {
+                var wordText = jToken["WordText"].Select(t => t.ToString());
+                var wordName = jToken["WordName"].ToString();
+                var isImmediate = bool.Parse(jToken["IsImmediate"].ToString());
+                words.Add(wordName, new Word(WordWrapper(wordText.ToList()), isImmediate, wordText.ToArray()));
+            }
+
+            //Build remaining environment variables from JSON
+            var input = jEnv["Input"].Select(t => t.ToString()).ToList();
+            var inputIndex = Convert.ToInt16(jEnv["InputIndex"].ToString());
+            var mode = (FMode) Enum.Parse(typeof(FMode), jEnv["mode"].ToString());
+            var curWordDef = jEnv["CurWordDef"].Type == JTokenType.Null
+                ? null 
+                : jEnv["CurWordDef"].Select(t => t.ToString()).ToList();
+            var curWord = jEnv["CurWord"].Type == JTokenType.Null
+                ? null
+                : jEnv["CurWord"].ToString();
+
+            return new FEnvironment(stack, words, input, mode, inputIndex, curWord, curWordDef, writeLine);
+        }
+        
+        public static void SerializeEnvironment(FEnvironment e, StreamWriter writer)
+        {
+            //Only serialize words that are user-defined.
+            var words = e
+                .WordDict
+                .Where(e => e.Value.WordText != null)
+                .Select(e => new Dictionary<string, object>
+                {
+                    {"WordName", e.Key},
+                    {"IsImmediate", e.Value.IsImmediate},
+                    {"WordText", e.Value.WordText}
+                })
+                .ToList();
+            
+            var stack = e
+                .DataStack
+                .Select(v => new Dictionary<string, string> {{"type", v.Item1.ToString()}, {"value", v.Item2}});
+            
+            var EnvDict = new Dictionary<string,object>
+            {
+                {"DataStack", stack}, 
+                {"WordDict", words},
+                {"Input", e.Input},
+                {"InputIndex", e.InputIndex},
+                {"mode", e.Mode.ToString()},
+                {"CurWordDef", e.CurWordDef},
+                {"CurWord", e.CurWord},
+            };
+            
+            //var o = new JsonSerializerOptions(){
+            //    WriteIndented = true
+            //};
+            var result = JsonSerializer.Serialize(EnvDict);
+            
+            writer.Write(result);
+        }
+
+        /// <summary>
+        /// Takes a StreamReader containing a serialized environment,
+        /// deserializes it, runs one eval step, and re-serializes it
+        /// to the given StreamWriter.
+        /// </summary>
+        /// <param name="outputHandler">Handler for any output produced during the evaluation step</param>
+        /// <returns>New environment</returns>
+        public static FEnvironment StepJsonEnvironment(string jsonPath, Func<String> inputHandler, Action<string> outputHandler)
+        {
+            var reader = new StreamReader(jsonPath);
+            var deserializedEnvironment = DeserializeEnvironment(reader, outputHandler);
+            reader.Close();
+            
+            var newEnvironment = StepEnvironment(deserializedEnvironment, inputHandler);
+
+            var writer = new StreamWriter(jsonPath);
+            SerializeEnvironment(newEnvironment, writer);
+            writer.Close();
+            return newEnvironment;
         }
     }
 }

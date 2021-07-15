@@ -1,7 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+
+using System.Threading;
 
 namespace Forsch
 {
@@ -61,7 +65,7 @@ namespace Forsch
     ///
     /// I wanted to use records for this but got tired of fighting with the IDE to let me use C# 9.
     /// </summary>
-    public struct FEnvironment
+    public struct FEnvironment : IEquatable<FEnvironment>
     {
         /// <summary>
         /// "The Stack" -- the main Forth stack. Sometimes Forths use other stacks, but ForschLib has only one.
@@ -112,18 +116,49 @@ namespace Forsch
             CurWord = curWord;
             WriteLine = writeLine;
         }
-    }
-
-    public class EnvironmentConverter : JsonConverter<FEnvironment>
-    {
-        public override FEnvironment Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+ 
+        public bool Equals(FEnvironment other)
         {
-            throw new NotImplementedException();
+            var stackEquality = DataStack.SequenceEqual(other.DataStack);
+            
+            //Compare word dictionaries by comparing WordTexts
+            Func<Dictionary<string, Word>, IEnumerable<String>> getWordDefs = wordDict => wordDict
+                .Where(w => w.Value.WordText != null)
+                .Select(w => String.Join(",", w.Value.WordText));
+            var wordDict1 = getWordDefs(WordDict);
+            var wordDict2 = getWordDefs(other.WordDict);
+            var wordEquality = wordDict1.SequenceEqual(wordDict2);
+            
+            var wordDefEquality = Equals(CurWordDef, other.CurWordDef);
+            var curWordEquality = CurWord == other.CurWord;
+            var inputEquality = Input.SequenceEqual(other.Input);
+            var modeEquality = Mode == other.Mode;
+            var inputIndexEquality = InputIndex == other.InputIndex;
+            return stackEquality && wordEquality && wordDefEquality && curWordEquality &&
+                   inputEquality && modeEquality && inputIndexEquality;
+
         }
 
-        public override void Write(Utf8JsonWriter writer, FEnvironment value, JsonSerializerOptions options)
+        public override bool Equals(object obj)
         {
-            throw new NotImplementedException();
+            return obj is FEnvironment other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = (DataStack != null ? DataStack.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ (WordDict != null ? WordDict.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ (CurWordDef != null ? CurWordDef.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ (CurWord != null ? CurWord.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ (Input != null ? Input.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ (int) Mode;
+                hashCode = (hashCode * 397) ^ InputIndex;
+                hashCode = (hashCode * 397) ^ (WriteLine != null ? WriteLine.GetHashCode() : 0);
+                return hashCode;
+            }
         }
     }
+
 }
