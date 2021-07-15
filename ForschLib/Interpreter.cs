@@ -180,9 +180,8 @@ namespace Forsch
             return e;
         }
 
-        public static FEnvironment DeserializeEnvironment(StreamReader s, Action<string> writeLine)
+        public static FEnvironment DeserializeEnvironment(string jText, Action<string> writeLine)
         {
-            var jText = s.ReadToEnd();
             var jEnv = JsonConvert.DeserializeObject<JObject>(jText);
             
             //Build data stack from JSON
@@ -220,7 +219,7 @@ namespace Forsch
             return new FEnvironment(stack, words, input, mode, inputIndex, curWord, curWordDef, writeLine);
         }
         
-        public static void SerializeEnvironment(FEnvironment e, StreamWriter writer)
+        public static string SerializeEnvironment(FEnvironment e)
         {
             //Only serialize words that are user-defined.
             var words = e
@@ -249,33 +248,22 @@ namespace Forsch
                 {"CurWord", e.CurWord},
             };
             
-            //var o = new JsonSerializerOptions(){
-            //    WriteIndented = true
-            //};
-            var result = JsonSerializer.Serialize(EnvDict);
-            
-            writer.Write(result);
+            return JsonSerializer.Serialize(EnvDict);
         }
 
         /// <summary>
-        /// Takes a StreamReader containing a serialized environment,
-        /// deserializes it, runs one eval step, and re-serializes it
-        /// to the given StreamWriter.
+        /// Takes a json string containing a serialized environment,
+        /// deserializes it, runs one eval step, and re-serializes it.
         /// </summary>
         /// <param name="outputHandler">Handler for any output produced during the evaluation step</param>
-        /// <returns>New environment</returns>
-        public static FEnvironment StepJsonEnvironment(string jsonPath, Func<String> inputHandler, Action<string> outputHandler)
+        /// <returns>New serialized environment</returns>
+        public static string StepJsonEnvironment(string jsonInput, Func<String> inputHandler, Action<string> outputHandler)
         {
-            var reader = new StreamReader(jsonPath);
-            var deserializedEnvironment = DeserializeEnvironment(reader, outputHandler);
-            reader.Close();
+            var deserializedEnvironment = DeserializeEnvironment(jsonInput, outputHandler);
             
             var newEnvironment = StepEnvironment(deserializedEnvironment, inputHandler);
 
-            var writer = new StreamWriter(jsonPath);
-            SerializeEnvironment(newEnvironment, writer);
-            writer.Close();
-            return newEnvironment;
+            return SerializeEnvironment(newEnvironment);
         }
     }
 }
