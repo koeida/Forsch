@@ -185,6 +185,7 @@ namespace Forsch
             var jText = s.ReadToEnd();
             var jEnv = JsonConvert.DeserializeObject<JObject>(jText);
             
+            //Build data stack from JSON
             var stackList = jEnv["DataStack"]
                 .Select(t =>
                 {
@@ -205,6 +206,7 @@ namespace Forsch
                 words.Add(wordName, new Word(WordWrapper(wordText.ToList()), isImmediate, wordText.ToArray()));
             }
 
+            //Build remaining environment variables from JSON
             var input = jEnv["Input"].Select(t => t.ToString()).ToList();
             var inputIndex = Convert.ToInt16(jEnv["InputIndex"].ToString());
             var mode = (FMode) Enum.Parse(typeof(FMode), jEnv["mode"].ToString());
@@ -253,6 +255,27 @@ namespace Forsch
             var result = JsonSerializer.Serialize(EnvDict);
             
             writer.Write(result);
+        }
+
+        /// <summary>
+        /// Takes a StreamReader containing a serialized environment,
+        /// deserializes it, runs one eval step, and re-serializes it
+        /// to the given StreamWriter.
+        /// </summary>
+        /// <param name="outputHandler">Handler for any output produced during the evaluation step</param>
+        /// <returns>New environment</returns>
+        public static FEnvironment StepJsonEnvironment(string jsonPath, Func<String> inputHandler, Action<string> outputHandler)
+        {
+            var reader = new StreamReader(jsonPath);
+            var deserializedEnvironment = DeserializeEnvironment(reader, outputHandler);
+            reader.Close();
+            
+            var newEnvironment = StepEnvironment(deserializedEnvironment, inputHandler);
+
+            var writer = new StreamWriter(jsonPath);
+            SerializeEnvironment(newEnvironment, writer);
+            writer.Close();
+            return newEnvironment;
         }
     }
 }
