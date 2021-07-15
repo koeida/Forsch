@@ -45,14 +45,16 @@ namespace ForschTests
         [Test]
         public void TestStepJsonEnvironment()
         {
+            var testCode = ": ADD1 1 + ;\n1 ADD1 .";
+            
             var envOutput1 = new StringBuilder();
             var preloadedEnvironment = LoadTestEnvironment(s => envOutput1.Append(s));
-            var testInput = new StringReader("1 1 + .");
+            var testInput = new StringReader(testCode);
             RunInterpreter(preloadedEnvironment, testInput.ReadLine);
 
             var envOutput2 = new StringBuilder();
             var preloadedEnvironment2 = LoadTestEnvironment(s => envOutput1.Append(s));
-            var testInput2 = new StringReader("1 1 + .");
+            var testInput2 = new StringReader(testCode);
             var initialWriter = new StreamWriter(@"EnvTest2.json");
             SerializeEnvironment(preloadedEnvironment2, initialWriter);
             initialWriter.Close();
