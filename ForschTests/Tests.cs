@@ -43,7 +43,8 @@ namespace ForschTests
         [Test]
         public void TestStepJsonEnvironment()
         {
-            var testCode = ": ADD1 1 + ;\n1 ADD1 .";
+            //var testCode = ": ADD1 1 + ;\n1 ADD1 .";
+            var testCode = "1 2 SWAP 3 4 SWAP . . . .";
             
             var envOutput1 = new StringBuilder();
             var preloadedEnvironment = LoadTestEnvironment(s => envOutput1.Append(s));

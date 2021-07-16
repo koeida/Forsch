@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Web.Script.Services;
 using System.Web.Services;
 
 using static Forsch.Builtins;
@@ -15,6 +16,7 @@ namespace Forsch
     using FWordDict = Dictionary<string, Word>;
     
     [WebService (Namespace="http://127.0.0.1:9000/ForschService")]
+    [ScriptService]
     public class ForschService : WebService
     {
         public string output;
@@ -25,6 +27,7 @@ namespace Forsch
         }
 
         [WebMethod]
+        [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
         public string EvalStep(string jsonEnvironment)
         {
             var output = new StringBuilder();
@@ -53,5 +56,4 @@ namespace Forsch
             return output;
         }
     }
-    
 }

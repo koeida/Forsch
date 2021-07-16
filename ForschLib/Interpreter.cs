@@ -209,10 +209,10 @@ namespace Forsch
             var input = jEnv["Input"].Select(t => t.ToString()).ToList();
             var inputIndex = Convert.ToInt16(jEnv["InputIndex"].ToString());
             var mode = (FMode) Enum.Parse(typeof(FMode), jEnv["mode"].ToString());
-            var curWordDef = jEnv["CurWordDef"].Type == JTokenType.Null
+            var curWordDef = jEnv["CurWordDef"].Type == JTokenType.Null || jEnv["CurWordDef"].Type == JTokenType.None
                 ? null 
                 : jEnv["CurWordDef"].Select(t => t.ToString()).ToList();
-            var curWord = jEnv["CurWord"].Type == JTokenType.Null
+            var curWord = jEnv["CurWord"].Type == JTokenType.Null || jEnv["CurWord"].Type == JTokenType.None
                 ? null
                 : jEnv["CurWord"].ToString();
 
@@ -235,7 +235,8 @@ namespace Forsch
             
             var stack = e
                 .DataStack
-                .Select(v => new Dictionary<string, string> {{"type", v.Item1.ToString()}, {"value", v.Item2}});
+                .Select(v => new Dictionary<string, string> {{"type", v.Item1.ToString()}, {"value", v.Item2}})
+                .Reverse();
             
             var EnvDict = new Dictionary<string,object>
             {

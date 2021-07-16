@@ -5,6 +5,7 @@
 &lt;/AssemblyExplorer&gt;</s:String>
 	<s:String x:Key="/Default/Environment/Hierarchy/Build/BuildTool/CustomBuildToolPath/@EntryValue">/usr/lib/mono/msbuild/15.0/bin/MSBuild.dll</s:String>
 	<s:Int64 x:Key="/Default/Environment/Hierarchy/Build/BuildTool/MsbuildVersion/@EntryValue">983040</s:Int64>
+	
 	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=14aad1e0_002Def8c_002D484d_002D9fb5_002Dd86ddebb27ad/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="GetNextTests" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;
   &lt;Project Location="/home/laptop/RiderProjects/Forcsh/ForschTests" Presentation="&amp;lt;ForschTests&amp;gt;" /&gt;
 &lt;/SessionState&gt;</s:String>
