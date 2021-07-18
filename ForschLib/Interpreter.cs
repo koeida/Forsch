@@ -182,7 +182,16 @@ namespace Forsch
 
         public static FEnvironment DeserializeEnvironment(string jText, Action<string> writeLine)
         {
-            var jEnv = JsonConvert.DeserializeObject<JObject>(jText);
+            JObject jEnv;
+            try
+            {
+                jEnv = JsonConvert.DeserializeObject<JObject>(jText);
+            }
+            catch(Exception e)
+            {
+              Console.WriteLine(jText);
+              throw new Exception("Error deserializing: " + e.Message);
+            }
             
             //Build data stack from JSON
             var stackList = jEnv["DataStack"]

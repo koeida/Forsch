@@ -34,7 +34,7 @@ namespace ForschTests
             var deserializedEnvironment = DeserializeEnvironment(serializedEnvironment, Console.WriteLine);
             Assert.AreEqual(steppedEnvironment, deserializedEnvironment);
         }
-
+        
         /// <summary>
         /// Run a simple computation with the normal read/eval loop and compare it to
         /// a computation run by repeatedly serializing/deserializing and stepping through
@@ -43,7 +43,6 @@ namespace ForschTests
         [Test]
         public void TestStepJsonEnvironment()
         {
-            //var testCode = ": ADD1 1 + ;\n1 ADD1 .";
             var testCode = "1 2 SWAP 3 4 SWAP . . . .";
             
             var envOutput1 = new StringBuilder();
@@ -51,10 +50,7 @@ namespace ForschTests
             var testInput = new StringReader(testCode);
             RunInterpreter(preloadedEnvironment, testInput.ReadLine);
 
-            var envOutput2 = new StringBuilder();
-            var preloadedEnvironment2 = LoadTestEnvironment(s => envOutput1.Append(s));
-            var testInput2 = new StringReader(testCode);
-            var serializedEnvironment = SerializeEnvironment(preloadedEnvironment2);
+            var (serializedEnvironment, testInput2, envOutput2) = InitializeSerializedEnvironment(testCode);
             
             while (true)
             {
@@ -65,6 +61,15 @@ namespace ForschTests
             }
             Assert.AreEqual(envOutput1.ToString(), envOutput2.ToString());
 
+        }
+
+        private static (string, StringReader, StringBuilder) InitializeSerializedEnvironment(string testCode)
+        {
+            var envOutput = new StringBuilder();
+            var preloadedEnvironment = LoadTestEnvironment(s => envOutput.Append(s));
+            var testInput = new StringReader(testCode);
+            var serializedEnvironment = SerializeEnvironment(preloadedEnvironment);
+            return (serializedEnvironment, testInput, envOutput);
         }
 
         private static FEnvironment LoadTestEnvironment(Action<string> outputHandler)
