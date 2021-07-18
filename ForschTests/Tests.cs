@@ -28,15 +28,13 @@ namespace ForschTests
             var steppedEnvironment = StepEnvironment(preloadedEnvironment, testInput.ReadLine);
 
             //Serialize test environment
-            var writer = new StreamWriter(@"EnvTest.json");
-            SerializeEnvironment(steppedEnvironment, writer);
-            writer.Close();
+            var serializedEnvironment = SerializeEnvironment(steppedEnvironment);
             
             //Compare serialized/deserialized to original.
-            var deserializedEnvironment = DeserializeEnvironment(new StreamReader(@"EnvTest.json"), Console.WriteLine);
+            var deserializedEnvironment = DeserializeEnvironment(serializedEnvironment, Console.WriteLine);
             Assert.AreEqual(steppedEnvironment, deserializedEnvironment);
         }
-
+        
         /// <summary>
         /// Run a simple computation with the normal read/eval loop and compare it to
         /// a computation run by repeatedly serializing/deserializing and stepping through
@@ -45,27 +43,33 @@ namespace ForschTests
         [Test]
         public void TestStepJsonEnvironment()
         {
-            var testCode = ": ADD1 1 + ;\n1 ADD1 .";
+            var testCode = "1 2 SWAP 3 4 SWAP . . . .";
             
             var envOutput1 = new StringBuilder();
             var preloadedEnvironment = LoadTestEnvironment(s => envOutput1.Append(s));
             var testInput = new StringReader(testCode);
             RunInterpreter(preloadedEnvironment, testInput.ReadLine);
 
-            var envOutput2 = new StringBuilder();
-            var preloadedEnvironment2 = LoadTestEnvironment(s => envOutput1.Append(s));
-            var testInput2 = new StringReader(testCode);
-            var initialWriter = new StreamWriter(@"EnvTest2.json");
-            SerializeEnvironment(preloadedEnvironment2, initialWriter);
-            initialWriter.Close();
+            var (serializedEnvironment, testInput2, envOutput2) = InitializeSerializedEnvironment(testCode);
             
             while (true)
             {
-                var e = StepJsonEnvironment( @"EnvTest2.json", testInput2.ReadLine, (s) => envOutput2.Append(s));
+                serializedEnvironment = StepJsonEnvironment(serializedEnvironment, testInput2.ReadLine, (s) => envOutput2.Append(s));
+                var e = DeserializeEnvironment(serializedEnvironment, (s) => envOutput2.Append(s));
                 if (e.Mode == FMode.Halt)
                     break;
             }
             Assert.AreEqual(envOutput1.ToString(), envOutput2.ToString());
+
+        }
+
+        private static (string, StringReader, StringBuilder) InitializeSerializedEnvironment(string testCode)
+        {
+            var envOutput = new StringBuilder();
+            var preloadedEnvironment = LoadTestEnvironment(s => envOutput.Append(s));
+            var testInput = new StringReader(testCode);
+            var serializedEnvironment = SerializeEnvironment(preloadedEnvironment);
+            return (serializedEnvironment, testInput, envOutput);
         }
 
         private static FEnvironment LoadTestEnvironment(Action<string> outputHandler)

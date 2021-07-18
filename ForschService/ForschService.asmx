@@ -2,6 +2,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using System.Web.Script.Services;
 using System.Web.Services;
 
 using static Forsch.Builtins;
@@ -12,7 +15,8 @@ namespace Forsch
     using FStack = Stack<(FType, String)>;
     using FWordDict = Dictionary<string, Word>;
     
-    [WebService (Namespace="http://forsch-service/ForschService")]
+    [WebService (Namespace="http://127.0.0.1:9000/ForschService")]
+    [ScriptService]
     public class ForschService : WebService
     {
         public string output;
@@ -20,6 +24,16 @@ namespace Forsch
         public void writeOutput(string s)
         {
             output += s + "\n";
+        }
+
+        [WebMethod]
+        [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
+        public string EvalStep(string jsonEnvironment)
+        {
+            var output = new StringBuilder();
+            var e = DeserializeEnvironment(jsonEnvironment, (s) => output.Append(s));
+            var newEnvironment = StepEnvironment(e, () => null);
+            return SerializeEnvironment(newEnvironment);
         }
         
         [WebMethod]
@@ -42,5 +56,4 @@ namespace Forsch
             return output;
         }
     }
-    
 }
