@@ -141,7 +141,7 @@ namespace Forsch
         public static FEnvironment FDot(FEnvironment e)
         {
             var (t, v) = e.DataStack.Pop();
-            e.WriteLine(v);
+            e.Output = v;
             return e;
         }
 
@@ -288,7 +288,7 @@ namespace Forsch
             if (bv == "False")
                 e.InputIndex = newIndex + 1;
             else
-                e.InputIndex += 1;
+                e.InputIndex += 2;
             return e;
         }
 
@@ -331,8 +331,8 @@ namespace Forsch
                 .Reverse()
                 .Aggregate("", (a, x) => a + $" ({x.Item1},{x.Item2})")
                 .Trim();
-                
-            e.WriteLine(s);
+
+            e.Output = s;
             return e;
         }
 
@@ -480,7 +480,9 @@ namespace Forsch
         public static FEnvironment FEndWord(FEnvironment e)
         {
             var stringDef = new List<string>(e.CurWordDef);
-            e.WordDict[e.CurWord] = new Word(WordWrapper(e.CurWordDef), false, stringDef.ToArray());
+            e.WordDict[e.CurWord] = new Word(null, false, stringDef.ToArray());
+            e.CurWord = "";
+            e.CurWordDef = new List<string>();
             e.Mode = FMode.Halt;
             return e;
         }
@@ -496,28 +498,22 @@ namespace Forsch
         public static FEnvironment FWord(FEnvironment e)
         {
             var wordName = e.Input[e.InputIndex];
-            int wordDataSkip; bool immediateMode;
-            if (e.Input[e.InputIndex + 1] == "IMMEDIATE")
-            {
-                wordDataSkip = 2;
-                immediateMode = true;
-            }
-            else
-            {
-                wordDataSkip = 1;
-                immediateMode = false;
-            }
-            
-            var wordData = e.Input.Skip(wordDataSkip).ToList();
-            
-            //Spin off a new interpreter in compile mode pointed at this fresh word data
-            var newEnv = RunInterpreter(
-                new FEnvironment(e.DataStack, e.WordDict, wordData, FMode.Compile, e.InputIndex, wordName, new List<string>(), e.WriteLine),
-                () => null);
 
-            newEnv.WordDict[wordName].IsImmediate = immediateMode;
-            //Return back to normal execution context with our new word added to the word dictionary
-            return new FEnvironment(newEnv.DataStack, newEnv.WordDict, new List<string>(), e.Mode, 0, null, null, e.WriteLine);
+            e.Mode = FMode.Compile;
+            e.CurWord = wordName;
+            e.InputIndex += 1;
+            return e;
+
+            // var wordData = e.Input.Skip(wordDataSkip).ToList();
+            // 
+            // //Spin off a new interpreter in compile mode pointed at this fresh word data
+            // var newEnv = RunInterpreter(
+            //     new FEnvironment(e.DataStack, e.WordDict, wordData, FMode.Compile, e.InputIndex, wordName, new List<string>(), e.WriteLine),
+            //     () => null);
+
+            // newEnv.WordDict[wordName].IsImmediate = immediateMode;
+            // //Return back to normal execution context with our new word added to the word dictionary
+            // return new FEnvironment(newEnv.DataStack, newEnv.WordDict, new List<string>(), e.Mode, 0, null, null, e.WriteLine);
         }
     }
 }

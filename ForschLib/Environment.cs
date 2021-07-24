@@ -103,9 +103,12 @@ namespace Forsch
         public int InputIndex;
 
         public Action<string> WriteLine;
-        
+
+        public string Output;
+
         public FEnvironment(FStack dataStack, FWordDict wordDict, List<string> input,
-            FMode mode, int inputIndex, string curWord, List<string> curWordDef, Action<string> writeLine)
+            FMode mode, int inputIndex, string curWord, List<string> curWordDef, Action<string> writeLine,
+            string output)
         {
             DataStack = dataStack;
             WordDict = wordDict;
@@ -115,8 +118,10 @@ namespace Forsch
             CurWordDef = curWordDef;
             CurWord = curWord;
             WriteLine = writeLine;
+            Output = output;
         }
- 
+
+
         public bool Equals(FEnvironment other)
         {
             var stackEquality = DataStack.SequenceEqual(other.DataStack);

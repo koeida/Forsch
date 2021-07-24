@@ -15,6 +15,37 @@ namespace ForschTests
     [TestFixture]
     public class Tests
     {
+        [Test]
+        public void TestCompileMode()
+        {
+            var initialEnvironment = new FEnvironment(new FStack(), new FWordDict(BuiltinWords), new List<string>(),
+                FMode.Execute, 0, null, new List<string>(), Console.WriteLine, "");
+
+            //Run one bit of test input
+            var testInput = new StringReader(": ADD1 IMMEDIATE 1 + ;");
+            var steppedEnvironment = StepEnvironment(initialEnvironment, testInput.ReadLine);
+
+            Assert.AreEqual(FMode.Compile, steppedEnvironment.Mode);
+            Assert.AreEqual("ADD1", steppedEnvironment.CurWord);
+            Assert.AreEqual("IMMEDIATE", steppedEnvironment.Input[steppedEnvironment.InputIndex]);
+
+            var step2 = StepEnvironment(steppedEnvironment, testInput.ReadLine);
+            Assert.AreEqual(FMode.Compile, step2.Mode);
+            Assert.AreEqual("1", step2.Input[step2.InputIndex]);
+            Assert.AreEqual("IMMEDIATE", String.Join("",step2.CurWordDef));
+            
+            var step3 = StepEnvironment(step2, testInput.ReadLine);
+            Assert.AreEqual("IMMEDIATE 1", String.Join(" ",step3.CurWordDef));
+            
+            var step4 = StepEnvironment(step3, testInput.ReadLine);
+            Assert.AreEqual(";", step4.Input[step4.InputIndex]);
+            Assert.AreEqual("IMMEDIATE 1 +", String.Join(" ",step4.CurWordDef));
+            
+            var finalStep = StepEnvironment(step4, testInput.ReadLine);
+            Assert.AreEqual("", String.Join("", finalStep.CurWordDef));
+
+        }
+
         /// <summary>
         /// Ensure that a serialized/unserialized environment is equal to the original.
         /// </summary>
@@ -75,7 +106,7 @@ namespace ForschTests
         private static FEnvironment LoadTestEnvironment(Action<string> outputHandler)
         {
             var initialEnvironment = new FEnvironment(new FStack(), new FWordDict(BuiltinWords), new List<string>(),
-                FMode.Execute, 0, null, new List<string>(), outputHandler);
+                FMode.Execute, 0, null, new List<string>(), outputHandler, "");
             var predefinedWordFile = new System.IO.StreamReader(@"PredefinedWords.forsch");
             var preloadedEnvironment = RunInterpreter(initialEnvironment, predefinedWordFile.ReadLine);
             predefinedWordFile.Close();

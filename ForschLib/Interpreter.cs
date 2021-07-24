@@ -28,11 +28,13 @@ namespace Forsch
         {
             return (FEnvironment e) =>
             {
-                var tempEnv = new FEnvironment(e.DataStack, e.WordDict, wordData, e.Mode, 0, e.CurWord, e.CurWordDef, e.WriteLine);
+                var tempEnv = new FEnvironment(e.DataStack, e.WordDict, wordData, e.Mode, 0, e.CurWord, e.CurWordDef,
+                    e.WriteLine, "");
                 
                 var resultEnv = RunInterpreter(tempEnv, () => null);
 
-                return new FEnvironment(resultEnv.DataStack, resultEnv.WordDict, e.Input, FMode.Execute, e.InputIndex, e.CurWord, resultEnv.CurWordDef, e.WriteLine);
+                return new FEnvironment(resultEnv.DataStack, resultEnv.WordDict, e.Input, FMode.Execute, e.InputIndex,
+                    e.CurWord, resultEnv.CurWordDef, e.WriteLine, "");
             };
         }
 
@@ -104,9 +106,11 @@ namespace Forsch
             {
                 if (t == FType.FWord && e.WordDict[v].IsImmediate)
                 {
+                    var oldMode = e.Mode;
                     e.Mode = FMode.Execute;
                     var result = e.WordDict[v].WordFunc(e);
-                    result.Mode = FMode.Compile;
+                    result.Mode = oldMode;
+                    
                     return result;
                 }
                 else
@@ -175,7 +179,8 @@ namespace Forsch
         public static FEnvironment StepEnvironment(FEnvironment e, Func<string> readLine)
         {
             var (token, input, newIndex) = Read(e.Input, e.InputIndex, readLine, e.WordDict);
-            e = new FEnvironment(e.DataStack, e.WordDict, input, e.Mode, newIndex, e.CurWord, e.CurWordDef, e.WriteLine);
+            e = new FEnvironment(e.DataStack, e.WordDict, input, e.Mode, newIndex, e.CurWord, e.CurWordDef,
+                e.WriteLine, "");
             e = Eval(e, token);
             return e;
         }
@@ -225,7 +230,7 @@ namespace Forsch
                 ? null
                 : jEnv["CurWord"].ToString();
 
-            return new FEnvironment(stack, words, input, mode, inputIndex, curWord, curWordDef, writeLine);
+            return new FEnvironment(stack, words, input, mode, inputIndex, curWord, curWordDef, writeLine, "");
         }
         
         public static string SerializeEnvironment(FEnvironment e)
