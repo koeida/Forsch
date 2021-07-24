@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 using Forsch;
@@ -15,35 +16,74 @@ namespace ForschTests
     [TestFixture]
     public class Tests
     {
+        /// <summary>
+        /// New words compiled to dictionary stepwise
+        /// instead of all at once upon completion.
+        /// </summary>
+        [Test]
+        public void TestNewWord()
+        {
+            var testInput = ": ADD1 IMMEDIATE 1 + ;";
+            var initialEnvironment = FEnvFactory(testInput); 
+
+            var step1 = StepEnvironment(initialEnvironment);
+            Assert.AreEqual(new List<string>(), step1.WordDict["ADD1"].WordText);
+
+            var step2 = StepEnvironment(step1);
+            Assert.AreEqual(new List<string>(new [] {"IMMEDIATE"}), step2.WordDict["ADD1"].WordText);
+        }
+        
+        /// <summary>
+        /// Output directed to environment.Output every step.
+        /// </summary>
+        [Test]
+        public void TestOutput()
+        {
+            var testInput = "hello_world .";
+            var initialEnvironment = FEnvFactory(testInput);
+
+            var steppedEnvironment = StepEnvironment(initialEnvironment);
+            Assert.AreEqual("", steppedEnvironment.Output);
+
+            var env2 = StepEnvironment(steppedEnvironment);
+            Assert.AreEqual("hello_world", env2.Output);
+            
+            var serializedEnvironment = SerializeEnvironment(env2);
+            Assert.IsTrue(serializedEnvironment.Contains("\"Output\":\"hello_world\""));
+        }
+        
+        /// <summary>
+        /// Test that compilation can proceed stepwise, appending words
+        /// to the CurWord buffer until the word ends.
+        /// </summary>
         [Test]
         public void TestCompileMode()
         {
-            var initialEnvironment = new FEnvironment(new FStack(), new FWordDict(BuiltinWords), new List<string>(),
-                FMode.Execute, 0, null, new List<string>(), Console.WriteLine, "");
+            var testInput = ": ADD1 IMMEDIATE 1 + ;";
+            var initialEnvironment = FEnvFactory(testInput);
+            Func<FEnvironment, string> curWord = (FEnvironment e) => String.Join(" ", e.WordDict[e.CurWord].WordText);
 
-            //Run one bit of test input
-            var testInput = new StringReader(": ADD1 IMMEDIATE 1 + ;");
-            var steppedEnvironment = StepEnvironment(initialEnvironment, testInput.ReadLine);
+            var steppedEnvironment = StepEnvironment(initialEnvironment);
 
             Assert.AreEqual(FMode.Compile, steppedEnvironment.Mode);
             Assert.AreEqual("ADD1", steppedEnvironment.CurWord);
             Assert.AreEqual("IMMEDIATE", steppedEnvironment.Input[steppedEnvironment.InputIndex]);
 
-            var step2 = StepEnvironment(steppedEnvironment, testInput.ReadLine);
+            var step2 = StepEnvironment(steppedEnvironment);
             Assert.AreEqual(FMode.Compile, step2.Mode);
             Assert.AreEqual("1", step2.Input[step2.InputIndex]);
-            Assert.AreEqual("IMMEDIATE", String.Join("",step2.CurWordDef));
+            Assert.IsTrue(step2.WordDict["ADD1"].IsImmediate);
             
-            var step3 = StepEnvironment(step2, testInput.ReadLine);
-            Assert.AreEqual("IMMEDIATE 1", String.Join(" ",step3.CurWordDef));
+            var step3 = StepEnvironment(step2);
+            Assert.AreEqual("1", curWord(step3));
             
-            var step4 = StepEnvironment(step3, testInput.ReadLine);
+            var step4 = StepEnvironment(step3);
             Assert.AreEqual(";", step4.Input[step4.InputIndex]);
-            Assert.AreEqual("IMMEDIATE 1 +", String.Join(" ",step4.CurWordDef));
+            Assert.AreEqual("1 +", curWord(step4));
             
-            var finalStep = StepEnvironment(step4, testInput.ReadLine);
-            Assert.AreEqual("", String.Join("", finalStep.CurWordDef));
+            var finalStep = StepEnvironment(step4);
 
+            Assert.AreEqual("1 +", String.Join(" ", finalStep.WordDict["ADD1"].WordText));
         }
 
         /// <summary>
@@ -52,11 +92,8 @@ namespace ForschTests
         [Test]
         public void TestSerialization()
         {
-            var preloadedEnvironment = LoadTestEnvironment(Console.WriteLine);
-
-            //Run one bit of test input
-            var testInput = new StringReader("1 1 + .");
-            var steppedEnvironment = StepEnvironment(preloadedEnvironment, testInput.ReadLine);
+            var testInput = "1 1 + .";
+            var steppedEnvironment = StepEnvironment(FEnvFactory(testInput));
 
             //Serialize test environment
             var serializedEnvironment = SerializeEnvironment(steppedEnvironment);
@@ -102,11 +139,15 @@ namespace ForschTests
             var serializedEnvironment = SerializeEnvironment(preloadedEnvironment);
             return (serializedEnvironment, testInput, envOutput);
         }
+        
+        public static Func<string,FEnvironment> FEnvFactory = (string initialInput) => new FEnvironment(
+            new FStack(), new FWordDict(BuiltinWords), initialInput.Split().ToList(),
+            FMode.Execute, 0, null, "");
 
         private static FEnvironment LoadTestEnvironment(Action<string> outputHandler)
         {
             var initialEnvironment = new FEnvironment(new FStack(), new FWordDict(BuiltinWords), new List<string>(),
-                FMode.Execute, 0, null, new List<string>(), outputHandler, "");
+                FMode.Execute, 0, null, "");
             var predefinedWordFile = new System.IO.StreamReader(@"PredefinedWords.forsch");
             var preloadedEnvironment = RunInterpreter(initialEnvironment, predefinedWordFile.ReadLine);
             predefinedWordFile.Close();

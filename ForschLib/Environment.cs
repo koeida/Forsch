@@ -21,9 +21,9 @@ namespace Forsch
     {
         public Func<FEnvironment, FEnvironment> WordFunc;
         public bool IsImmediate;
-        public string[] WordText;
+        public List<string> WordText;
 
-        public Word(Func<FEnvironment, FEnvironment> wordFunc, bool isImmediate, string[] wordText)
+        public Word(Func<FEnvironment, FEnvironment> wordFunc, bool isImmediate, List<string> wordText)
         {
             WordFunc = wordFunc;
             IsImmediate = isImmediate;
@@ -78,11 +78,6 @@ namespace Forsch
         public FWordDict WordDict;
 
         /// <summary>
-        /// Reference to the definition of current word being compiled
-        /// </summary>
-        public List<String> CurWordDef;
-
-        /// <summary>
         /// Name of current word being compiled
         /// </summary>
         public String CurWord;
@@ -102,12 +97,10 @@ namespace Forsch
         /// </summary>
         public int InputIndex;
 
-        public Action<string> WriteLine;
-
         public string Output;
 
         public FEnvironment(FStack dataStack, FWordDict wordDict, List<string> input,
-            FMode mode, int inputIndex, string curWord, List<string> curWordDef, Action<string> writeLine,
+            FMode mode, int inputIndex, string curWord,
             string output)
         {
             DataStack = dataStack;
@@ -115,9 +108,7 @@ namespace Forsch
             Input = input;
             InputIndex = inputIndex;
             Mode = mode;
-            CurWordDef = curWordDef;
             CurWord = curWord;
-            WriteLine = writeLine;
             Output = output;
         }
 
@@ -134,12 +125,11 @@ namespace Forsch
             var wordDict2 = getWordDefs(other.WordDict);
             var wordEquality = wordDict1.SequenceEqual(wordDict2);
             
-            var wordDefEquality = Equals(CurWordDef, other.CurWordDef);
             var curWordEquality = CurWord == other.CurWord;
             var inputEquality = Input.SequenceEqual(other.Input);
             var modeEquality = Mode == other.Mode;
             var inputIndexEquality = InputIndex == other.InputIndex;
-            return stackEquality && wordEquality && wordDefEquality && curWordEquality &&
+            return stackEquality && wordEquality && curWordEquality &&
                    inputEquality && modeEquality && inputIndexEquality;
 
         }
@@ -155,12 +145,10 @@ namespace Forsch
             {
                 var hashCode = (DataStack != null ? DataStack.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ (WordDict != null ? WordDict.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ (CurWordDef != null ? CurWordDef.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ (CurWord != null ? CurWord.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ (Input != null ? Input.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ (int) Mode;
                 hashCode = (hashCode * 397) ^ InputIndex;
-                hashCode = (hashCode * 397) ^ (WriteLine != null ? WriteLine.GetHashCode() : 0);
                 return hashCode;
             }
         }

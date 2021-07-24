@@ -18,7 +18,7 @@ namespace Forsch
         public static void Main(string[] args)
         {
             var initialEnvironment = new FEnvironment(new FStack(), BuiltinWords, new List<string>(), FMode.Execute, 0,
-                null, new List<string>(), Console.WriteLine, "");
+                null, "");
             
             // Load up core premade words that didn't have to get written in C#
             var predefinedWordFile = new System.IO.StreamReader(@"PredefinedWords.forsch");
@@ -27,7 +27,7 @@ namespace Forsch
 
             // Spin up a fresh environment with the predefined words loaded in
             var e = new FEnvironment(preloadedEnvironment.DataStack, preloadedEnvironment.WordDict,
-                new List<string>(), FMode.Execute, 0, null, null, Console.WriteLine, "");
+                new List<string>(), FMode.Execute, 0, null, "");
             RunInterpreter(e, Console.ReadLine);
         }
     }

@@ -28,13 +28,12 @@ namespace Forsch
         {
             return (FEnvironment e) =>
             {
-                var tempEnv = new FEnvironment(e.DataStack, e.WordDict, wordData, e.Mode, 0, e.CurWord, e.CurWordDef,
-                    e.WriteLine, "");
+                var tempEnv = new FEnvironment(e.DataStack, e.WordDict, wordData, e.Mode, 0, e.CurWord, "");
                 
                 var resultEnv = RunInterpreter(tempEnv, () => null);
 
                 return new FEnvironment(resultEnv.DataStack, resultEnv.WordDict, e.Input, FMode.Execute, e.InputIndex,
-                    e.CurWord, resultEnv.CurWordDef, e.WriteLine, "");
+                    e.CurWord, "");
             };
         }
 
@@ -115,7 +114,7 @@ namespace Forsch
                 }
                 else
                 {
-                    e.CurWordDef.Add(v);
+                    e.WordDict[e.CurWord].WordText.Add(v);
                     return e;
                 }
             }
@@ -139,25 +138,16 @@ namespace Forsch
         /// Null token returned if stream empty.
         /// </summary>
         /// <param name="input">Current list of untokenized words</param>
-        /// <param name="readLine">Function to grab a new line from a stream</param>
+        /// <param name="inputIndex"></param>
         /// <param name="wordDict">The ForschLib word dictionary</param>
         /// <returns></returns>
-        public static ((FType, String) token, List<string> input, int newIndex) Read(List<string> input, int inputIndex, Func<string> readLine, FWordDict wordDict)
+        public static ((FType, string) token, List<string> input, int newIndex) Read(List<string> input, int inputIndex,
+            FWordDict wordDict)
         {
             if (inputIndex >= input.Count())
-            {
-                var nextLine = readLine();
-                if (nextLine == null)
-                    return ((FType.FNull, null), input, 0);
-                else if (nextLine.Trim() == "")
-                    return Read(new List<string>(), 0 , readLine, wordDict);
-                else
-                    return Read(new List<string>(nextLine.Trim().Split()), 0, readLine, wordDict);
-            }
+                return ((FType.FNull, null), input, 0);
             else
-            {
                 return (Tokenize(input[inputIndex], wordDict), input, inputIndex + 1);
-            }
         }
 
         /// <summary>
@@ -171,16 +161,15 @@ namespace Forsch
         public static FEnvironment RunInterpreter(FEnvironment e, Func<string> readLine)
         {
             while (e.Mode != FMode.Halt)
-                e = StepEnvironment(e, readLine);
+                e = StepEnvironment(e);
 
             return e;
         }
 
-        public static FEnvironment StepEnvironment(FEnvironment e, Func<string> readLine)
+        public static FEnvironment StepEnvironment(FEnvironment e)
         {
-            var (token, input, newIndex) = Read(e.Input, e.InputIndex, readLine, e.WordDict);
-            e = new FEnvironment(e.DataStack, e.WordDict, input, e.Mode, newIndex, e.CurWord, e.CurWordDef,
-                e.WriteLine, "");
+            var (token, input, newIndex) = Read(e.Input, e.InputIndex, e.WordDict);
+            e = new FEnvironment(e.DataStack, e.WordDict, input, e.Mode, newIndex, e.CurWord, "");
             e = Eval(e, token);
             return e;
         }
@@ -216,21 +205,18 @@ namespace Forsch
                 var wordText = jToken["WordText"].Select(t => t.ToString());
                 var wordName = jToken["WordName"].ToString();
                 var isImmediate = bool.Parse(jToken["IsImmediate"].ToString());
-                words.Add(wordName, new Word(WordWrapper(wordText.ToList()), isImmediate, wordText.ToArray()));
+                words.Add(wordName, new Word(WordWrapper(wordText.ToList()), isImmediate, wordText.ToList()));
             }
 
             //Build remaining environment variables from JSON
             var input = jEnv["Input"].Select(t => t.ToString()).ToList();
             var inputIndex = Convert.ToInt16(jEnv["InputIndex"].ToString());
             var mode = (FMode) Enum.Parse(typeof(FMode), jEnv["mode"].ToString());
-            var curWordDef = jEnv["CurWordDef"].Type == JTokenType.Null || jEnv["CurWordDef"].Type == JTokenType.None
-                ? null 
-                : jEnv["CurWordDef"].Select(t => t.ToString()).ToList();
             var curWord = jEnv["CurWord"].Type == JTokenType.Null || jEnv["CurWord"].Type == JTokenType.None
                 ? null
                 : jEnv["CurWord"].ToString();
 
-            return new FEnvironment(stack, words, input, mode, inputIndex, curWord, curWordDef, writeLine, "");
+            return new FEnvironment(stack, words, input, mode, inputIndex, curWord, "");
         }
         
         public static string SerializeEnvironment(FEnvironment e)
@@ -259,8 +245,8 @@ namespace Forsch
                 {"Input", e.Input},
                 {"InputIndex", e.InputIndex},
                 {"mode", e.Mode.ToString()},
-                {"CurWordDef", e.CurWordDef},
                 {"CurWord", e.CurWord},
+                {"Output", e.Output}
             };
             
             return JsonSerializer.Serialize(EnvDict);
@@ -276,7 +262,7 @@ namespace Forsch
         {
             var deserializedEnvironment = DeserializeEnvironment(jsonInput, outputHandler);
             
-            var newEnvironment = StepEnvironment(deserializedEnvironment, inputHandler);
+            var newEnvironment = StepEnvironment(deserializedEnvironment);
 
             return SerializeEnvironment(newEnvironment);
         }

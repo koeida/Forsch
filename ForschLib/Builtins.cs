@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using LanguageExt.ClassInstances.Pred;
 using static Forsch.Interpreter;
 
 namespace Forsch
@@ -27,6 +28,7 @@ namespace Forsch
             [";"] = new Word(FEndWord, true, null),
             ["["] = new Word(FForceCompile, false, null),
             ["]"] = new Word(FForceExecute, false, null),
+            ["IMMEDIATE"] = new Word(FImmediate, true, null),
             ["RAND"] = new Word(FRandInt,false, null),
             ["DUP"] = new Word(FDup, false, null),
             ["DROP"] = new Word(FDrop, false, null),
@@ -372,7 +374,7 @@ namespace Forsch
         /// <returns>Modified environment</returns>
         public static FEnvironment FHere(FEnvironment e)
         {
-            e.DataStack.Push((FType.FInt, (e.CurWordDef.Count() - 1).ToString()));
+            e.DataStack.Push((FType.FInt, (e.WordDict[e.CurWord].WordText.Count() - 1).ToString()));
             return e;
         }
 
@@ -386,7 +388,7 @@ namespace Forsch
         {
             var (_,s) = e.DataStack.Pop();
             var (_,i) = e.DataStack.Pop();
-            e.CurWordDef[Convert.ToInt16(i)] = s;
+            e.WordDict[e.CurWord].WordText[Convert.ToInt16(i)] = s;
             return e;
         }
 
@@ -410,10 +412,10 @@ namespace Forsch
             if (closingBraceIndex == -1)
                 throw new Exception("Parsing error: no closing brace ]");
 
-            var newWordDef = e.CurWordDef.Concat(e.Input.GetRange(e.InputIndex, closingBraceIndex - 1)).ToList();
+            var newWordDef = e.WordDict[e.CurWord].WordText.Concat(e.Input.GetRange(e.InputIndex, closingBraceIndex - 1)).ToList();
 
             e.InputIndex = closingBraceIndex + 1;
-            e.CurWordDef = newWordDef;
+            e.WordDict[e.CurWord].WordText = newWordDef;
             return e;
         }
 
@@ -444,13 +446,13 @@ namespace Forsch
             if (s.Contains(" "))
             {
                 var words = s.Split();
-                var newWordDef = e.CurWordDef.Concat(words).ToList();
-                e.CurWordDef = newWordDef;
+                var newWordDef = e.WordDict[e.CurWord].WordText.Concat(words).ToList();
+                e.WordDict[e.CurWord].WordText = newWordDef;
             }
             else
             {
-                var newWordDef = new List<string>(e.CurWordDef) {s};
-                e.CurWordDef = newWordDef;
+                var newWordDef = new List<string>(e.WordDict[e.CurWord].WordText) {s};
+                e.WordDict[e.CurWord].WordText = newWordDef;
             }
 
             return e;
@@ -473,17 +475,22 @@ namespace Forsch
         }
 
         /// <summary>
-        /// Changes the mode to halt and adds the completed word to the dictionary.
+        /// Mostly symbolic indicator that we've reached the end of compile mode.
         /// </summary>
         /// <param name="e">Current environment</param>
         /// <returns>The same environment</returns>
         public static FEnvironment FEndWord(FEnvironment e)
         {
-            var stringDef = new List<string>(e.CurWordDef);
-            e.WordDict[e.CurWord] = new Word(null, false, stringDef.ToArray());
             e.CurWord = "";
-            e.CurWordDef = new List<string>();
-            e.Mode = FMode.Halt;
+            return e;
+        }
+
+        /// <summary>
+        /// Flags currently compiling word as an immediate-mode word.
+        /// </summary>
+        public static FEnvironment FImmediate(FEnvironment e)
+        {
+            e.WordDict[e.CurWord].IsImmediate = true;
             return e;
         }
 
@@ -498,7 +505,7 @@ namespace Forsch
         public static FEnvironment FWord(FEnvironment e)
         {
             var wordName = e.Input[e.InputIndex];
-
+            e.WordDict[wordName] = new Word(null, false, new List<string>());
             e.Mode = FMode.Compile;
             e.CurWord = wordName;
             e.InputIndex += 1;
