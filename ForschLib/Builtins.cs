@@ -110,7 +110,7 @@ namespace Forsch
 
         /// <summary>
         /// Pops a number n off the stack
-        /// and copies the nth element of the stack to the top
+        /// and moves the nth element of the stack to the top
         /// of the stack.
         /// </summary>
         /// <param name="e">Current environment</param>
@@ -119,7 +119,11 @@ namespace Forsch
         {
             var (_, nstr) = e.DataStack.Pop();
             var n = Convert.ToInt16(nstr);
-            var nth = e.DataStack.Skip(n).First();
+            var bottom = e.DataStack.Skip(n);
+            var top = e.DataStack.Take(n);
+            var nth = bottom.First();
+            var resultStack = new Stack<(FType, String)>(bottom.Skip(1).Concat(top));
+            e.DataStack = resultStack;
             e.DataStack.Push(nth);
             return e;
         }

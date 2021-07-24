@@ -16,6 +16,22 @@ namespace ForschTests
     [TestFixture]
     public class Tests
     {
+
+        [Test]
+        public void TestPick()
+        {
+            var testInput = "a b c 2 PICK";
+            var initialEnvironment = FEnvFactory(testInput); 
+
+            var step1 = StepEnvironment(initialEnvironment);
+            var step2 = StepEnvironment(step1);
+            var step3 = StepEnvironment(step2);
+            var step4 = StepEnvironment(step3);
+            var step5 = StepEnvironment(step4);
+            Assert.AreEqual(3, step5.DataStack.Count);
+            Assert.AreEqual("a", step5.DataStack.Pop().Item2);
+        }
+
         /// <summary>
         /// New words compiled to dictionary stepwise
         /// instead of all at once upon completion.
