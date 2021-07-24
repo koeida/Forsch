@@ -450,10 +450,7 @@ namespace Forsch
                 e.WordDict[e.CurWord].WordText = newWordDef;
             }
             else
-            {
-                var newWordDef = new List<string>(e.WordDict[e.CurWord].WordText) {s};
-                e.WordDict[e.CurWord].WordText = newWordDef;
-            }
+                e.WordDict[e.CurWord].WordText.Add(s);
 
             return e;
         }

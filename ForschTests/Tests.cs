@@ -30,7 +30,10 @@ namespace ForschTests
             Assert.AreEqual(new List<string>(), step1.WordDict["ADD1"].WordText);
 
             var step2 = StepEnvironment(step1);
-            Assert.AreEqual(new List<string>(new [] {"IMMEDIATE"}), step2.WordDict["ADD1"].WordText);
+            Assert.AreEqual(new List<string>(), step2.WordDict["ADD1"].WordText);
+            
+            var step3 = StepEnvironment(step2);
+            Assert.AreEqual(new List<string>(new string[]{"1"}), step3.WordDict["ADD1"].WordText);
         }
         
         /// <summary>
