@@ -119,7 +119,7 @@ namespace ForschTests
             var envOutput1 = new StringBuilder();
             var preloadedEnvironment = LoadTestEnvironment(s => envOutput1.Append(s));
             var testInput = new StringReader(testCode);
-            RunInterpreter(preloadedEnvironment, testInput.ReadLine);
+            RunInterpreter(preloadedEnvironment);
 
             var (serializedEnvironment, testInput2, envOutput2) = InitializeSerializedEnvironment(testCode);
             
@@ -142,17 +142,17 @@ namespace ForschTests
             var serializedEnvironment = SerializeEnvironment(preloadedEnvironment);
             return (serializedEnvironment, testInput, envOutput);
         }
-        
-        public static Func<string,FEnvironment> FEnvFactory = (string initialInput) => new FEnvironment(
+
+        public static Func<string, FEnvironment> FEnvFactory = (string initialInput) => new FEnvironment(
             new FStack(), new FWordDict(BuiltinWords), initialInput.Split().ToList(),
-            FMode.Execute, 0, null, "");
+            FMode.Execute, 0, null, new StringBuilder());
 
         private static FEnvironment LoadTestEnvironment(Action<string> outputHandler)
         {
             var initialEnvironment = new FEnvironment(new FStack(), new FWordDict(BuiltinWords), new List<string>(),
-                FMode.Execute, 0, null, "");
+                FMode.Execute, 0, null, new StringBuilder());
             var predefinedWordFile = new System.IO.StreamReader(@"PredefinedWords.forsch");
-            var preloadedEnvironment = RunInterpreter(initialEnvironment, predefinedWordFile.ReadLine);
+            var preloadedEnvironment = RunInterpreter(initialEnvironment);
             predefinedWordFile.Close();
             preloadedEnvironment.Mode = FMode.Execute;
             return preloadedEnvironment;

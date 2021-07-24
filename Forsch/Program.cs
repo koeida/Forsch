@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using static Forsch.Builtins;
 using static Forsch.Interpreter;
 
@@ -18,17 +19,18 @@ namespace Forsch
         public static void Main(string[] args)
         {
             var initialEnvironment = new FEnvironment(new FStack(), BuiltinWords, new List<string>(), FMode.Execute, 0,
-                null, "");
+                null, new StringBuilder());
+                
             
             // Load up core premade words that didn't have to get written in C#
             var predefinedWordFile = new System.IO.StreamReader(@"PredefinedWords.forsch");
-            var preloadedEnvironment = RunInterpreter(initialEnvironment, predefinedWordFile.ReadLine);
+            var preloadedEnvironment = RunInterpreter(initialEnvironment);
             predefinedWordFile.Close();
 
             // Spin up a fresh environment with the predefined words loaded in
             var e = new FEnvironment(preloadedEnvironment.DataStack, preloadedEnvironment.WordDict,
-                new List<string>(), FMode.Execute, 0, null, "");
-            RunInterpreter(e, Console.ReadLine);
+                new List<string>(), FMode.Execute, 0, null, new StringBuilder());
+            RunInterpreter(e);
         }
     }
 }

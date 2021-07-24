@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -28,12 +29,12 @@ namespace Forsch
         {
             return (FEnvironment e) =>
             {
-                var tempEnv = new FEnvironment(e.DataStack, e.WordDict, wordData, e.Mode, 0, e.CurWord, "");
+                var tempEnv = new FEnvironment(e.DataStack, e.WordDict, wordData, e.Mode, 0, e.CurWord, e.Output);
                 
-                var resultEnv = RunInterpreter(tempEnv, () => null);
+                var resultEnv = RunInterpreter(tempEnv);
 
                 return new FEnvironment(resultEnv.DataStack, resultEnv.WordDict, e.Input, FMode.Execute, e.InputIndex,
-                    e.CurWord, "");
+                    e.CurWord, resultEnv.Output);
             };
         }
 
@@ -158,7 +159,7 @@ namespace Forsch
         /// <param name="e">Current environment</param>
         /// <param name="readLine">Function to grab a line from a stream</param>
         /// <returns>New environment</returns>
-        public static FEnvironment RunInterpreter(FEnvironment e, Func<string> readLine)
+        public static FEnvironment RunInterpreter(FEnvironment e)
         {
             while (e.Mode != FMode.Halt)
                 e = StepEnvironment(e);
@@ -169,7 +170,7 @@ namespace Forsch
         public static FEnvironment StepEnvironment(FEnvironment e)
         {
             var (token, input, newIndex) = Read(e.Input, e.InputIndex, e.WordDict);
-            e = new FEnvironment(e.DataStack, e.WordDict, input, e.Mode, newIndex, e.CurWord, "");
+            e = new FEnvironment(e.DataStack, e.WordDict, input, e.Mode, newIndex, e.CurWord, e.Output);
             e = Eval(e, token);
             return e;
         }
@@ -216,7 +217,7 @@ namespace Forsch
                 ? null
                 : jEnv["CurWord"].ToString();
 
-            return new FEnvironment(stack, words, input, mode, inputIndex, curWord, "");
+            return new FEnvironment(stack, words, input, mode, inputIndex, curWord, new StringBuilder());
         }
         
         public static string SerializeEnvironment(FEnvironment e)
@@ -246,7 +247,7 @@ namespace Forsch
                 {"InputIndex", e.InputIndex},
                 {"mode", e.Mode.ToString()},
                 {"CurWord", e.CurWord},
-                {"Output", e.Output}
+                {"Output", e.Output.ToString()}
             };
             
             return JsonSerializer.Serialize(EnvDict);

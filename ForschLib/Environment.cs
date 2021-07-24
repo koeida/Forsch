@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -97,11 +98,11 @@ namespace Forsch
         /// </summary>
         public int InputIndex;
 
-        public string Output;
+        public StringBuilder Output;
 
         public FEnvironment(FStack dataStack, FWordDict wordDict, List<string> input,
             FMode mode, int inputIndex, string curWord,
-            string output)
+            StringBuilder output)
         {
             DataStack = dataStack;
             WordDict = wordDict;

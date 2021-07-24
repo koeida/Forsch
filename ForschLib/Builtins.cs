@@ -143,7 +143,7 @@ namespace Forsch
         public static FEnvironment FDot(FEnvironment e)
         {
             var (t, v) = e.DataStack.Pop();
-            e.Output = v;
+            e.Output.Append(v + "\n");
             return e;
         }
 
@@ -334,7 +334,7 @@ namespace Forsch
                 .Aggregate("", (a, x) => a + $" ({x.Item1},{x.Item2})")
                 .Trim();
 
-            e.Output = s;
+            e.Output.AppendLine(s);
             return e;
         }
 
